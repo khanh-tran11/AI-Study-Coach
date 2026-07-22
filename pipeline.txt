@@ -1,0 +1,78 @@
+The Pipeline
+Here's how the full request flows end-to-end:
+
+[Frontend]  →  [API Gateway]  →  [Lambda]  →  [Bedrock Knowledge Base]
+   ↑                                              |
+   └──────────────── response ←────────────────────┘
+Step by step:
+
+Frontend sends a POST request with the user's message to your API Gateway URL
+API Gateway receives the request, handles auth/validation/rate-limiting, and forwards it to Lambda
+Lambda takes the message, calls the Bedrock Knowledge Base RetrieveAndGenerate API (which does the RAG — retrieves relevant chunks from your indexed docs and generates a response using a foundation model)
+Response flows back: Bedrock → Lambda → API Gateway → Frontend
+Each Component Explained
+API Gateway (the front door)
+This is the public-facing URL your frontend calls. It handles:
+
+HTTPS endpoint — gives you a stable URL like https://abc123.execute-api.us-east-1.amazonaws.com/prod/chat
+CORS — so your frontend domain can call it without browser blocking
+Rate limiting — prevents abuse (e.g., 100 requests/sec)
+Auth — API keys, Cognito authorizers, or IAM auth depending on your needs
+Request validation — reject malformed payloads before they hit Lambda
+For your use case, a REST API with an API key is the simplest start. If you need user-level auth later, add a Cognito authorizer.
+
+Lambda (the glue logic)
+This is where your application logic lives. It:
+
+Parses the incoming request (user message, module context, session ID)
+Calls the Bedrock Knowledge Base API
+Optionally adds system prompts, conversation history, or module-specific context
+Formats the response and returns it
+The Lambda needs an IAM role with permissions to call bedrock:RetrieveAndGenerate (or bedrock:Retrieve if you want to handle generation separately).
+
+Bedrock Knowledge Base (the RAG engine)
+You've already built this. It:
+
+Stores your Canvas training documents as vector embeddings in a data source (likely OpenSearch Serverless or Pinecone)
+On each query: retrieves the top-K relevant document chunks, feeds them + the user question to a foundation model (Claude, Titan, etc.), and returns a grounded response with citations
+Lambda Code
+Here's what your Lambda function looks like:
+
+Accepted creation of
+
+chat_handler.py
+
+
+How to Deploy This
+1. Create the Lambda function
+
+Runtime: Python 3.12
+Handler: chat_handler.lambda_handler
+Environment variables:
+KNOWLEDGE_BASE_ID = your Bedrock KB ID (find it in the Bedrock console)
+MODEL_ARN = the model you want for generation (Claude Haiku is fast and cheap for chat)
+IAM role needs this policy:
+{
+  "Effect": "Allow",
+  "Action": [
+    "bedrock:RetrieveAndGenerate",
+    "bedrock:Retrieve"
+  ],
+  "Resource": "*"
+}
+2. Create the API Gateway
+
+Create a REST API
+Create a resource /chat with a POST method pointing to your Lambda
+Enable CORS on the resource
+Create a Usage Plan + API Key for basic auth
+Deploy to a stage (e.g., prod)
+3. Connect your frontend
+
+Point your frontend's fetch call to https://<your-api-id>.execute-api.<region>.amazonaws.com/prod/chat
+Include the API key in the x-api-key header
+Key Things to Know
+Session ID: Bedrock returns a sessionId on the first call. Pass it back on subsequent calls to maintain conversation context (multi-turn memory). Store it in your frontend's session state.
+Citations: The response includes source document references — use these to show "Learn more" links in your UI.
+Cost: You pay for Lambda invocations (negligible), API Gateway requests (cheap), and Bedrock model usage (per token). Haiku is the most cost-effective for conversational use.
+Cold starts: Lambda cold starts add ~1-2s on first call. If that matters, use provisioned concurrency or keep the function warm.
