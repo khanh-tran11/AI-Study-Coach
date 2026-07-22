@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Trainer — Faculty Onboarding Dashboard</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --canvas-red:    #E66000;
+      --canvas-dark:   #2D3B45;
+      --canvas-mid:    #394B58;
+      --canvas-light:  #F5F5F5;
+      --canvas-white:  #FFFFFF;
+      --accent-blue:   #0770A3;
+      --green:         #00AC18;
+      --yellow:        #C7A000;
+      --gray:          #8B8B8B;
+      --border:        #D6D6D6;
+      --text:          #2D3B45;
+      --text-light:    #5B6770;
+      --radius:        8px;
+      --shadow:        0 2px 8px rgba(0,0,0,0.10);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--canvas-light);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Top Nav ── */
+    header {
+      background: var(--canvas-dark);
+      color: var(--canvas-white);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 60px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .nav-brand .dot {
+      width: 10px; height: 10px;
+      background: var(--canvas-red);
+      border-radius: 50%;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.85rem;
+      color: #C8D0D5;
+    }
+
+    .nav-right .admin-badge {
+      background: var(--canvas-red);
+      color: white;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Page Layout ── */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* ── Page Header ── */
+    .page-header {
+      margin-bottom: 28px;
+    }
+
+    .page-header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--canvas-dark);
+    }
+
+    .page-header p {
+      margin-top: 4px;
+      color: var(--text-light);
+      font-size: 0.9rem;
+    }
+
+    /* ── Summary Cards ── */
+    .summary-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .summary-card {
+      background: var(--canvas-white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px 24px;
+      border-top: 4px solid var(--border);
+    }
+
+    .summary-card.total   { border-color: var(--accent-blue); }
+    .summary-card.done    { border-color: var(--green); }
+    .summary-card.active  { border-color: var(--yellow); }
+    .summary-card.pending { border-color: var(--gray); }
+
+    .summary-card .label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-light);
+      font-weight: 600;
+    }
+
+    .summary-card .number {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-top: 6px;
+      color: var(--canvas-dark);
+    }
+
+    /* ── Controls Bar ── */
+    .controls {
+      background: var(--canvas-white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .controls label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-light);
+      margin-right: 4px;
+    }
+
+    .controls input[type="text"],
+    .controls select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.88rem;
+      color: var(--text);
+      background: var(--canvas-white);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .controls input[type="text"]:focus,
+    .controls select:focus {
+      border-color: var(--accent-blue);
+    }
+
+    .controls input[type="text"] { min-width: 220px; }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 7px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      background: transparent;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-light);
+      transition: all 0.18s;
+    }
+
+    .filter-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+    .filter-btn.active { background: var(--accent-blue); border-color: var(--accent-blue); color: white; }
+    .filter-btn.done-btn.active  { background: var(--green); border-color: var(--green); color: white; }
+    .filter-btn.prog-btn.active  { background: var(--yellow); border-color: var(--yellow); color: white; }
+    .filter-btn.pend-btn.active  { background: var(--gray); border-color: var(--gray); color: white; }
+
+    .controls-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: var(--canvas-white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    thead {
+      background: var(--canvas-mid);
+      color: var(--canvas-white);
+    }
+
+    thead th {
+      padding: 13px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th:hover { background: #4a5f6e; }
+    thead th .sort-icon { margin-left: 4px; opacity: 0.6; font-style: normal; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #F0F6FA; }
+
+    td {
+      padding: 13px 16px;
+      vertical-align: middle;
+    }
+
+    /* ── Applicant Cell ── */
+    .applicant-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .applicant-name { font-weight: 600; }
+    .applicant-email { font-size: 0.78rem; color: var(--text-light); }
+
+    /* ── Progress Bar ── */
+    .progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      min-width: 80px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    .progress-pct { font-size: 0.82rem; font-weight: 600; color: var(--text-light); min-width: 34px; }
+
+    /* ── Status Badge ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 11px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+
+    .badge .dot { width: 7px; height: 7px; border-radius: 50%; }
+
+    .badge-done    { background: #E6F9EA; color: #007A12; }
+    .badge-done .dot    { background: var(--green); }
+    .badge-progress { background: #FFF8E1; color: #8A6C00; }
+    .badge-progress .dot { background: var(--yellow); }
+    .badge-pending  { background: #F3F3F3; color: #5B5B5B; }
+    .badge-pending .dot  { background: var(--gray); }
+
+    /* ── Hours Cell ── */
+    .hours-cell { font-weight: 700; }
+
+    /* ── Last Active ── */
+    .last-active { font-size: 0.82rem; color: var(--text-light); }
+
+    /* ── Module Breakdown Tooltip ── */
+    .modules-cell {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .mod-dot {
+      width: 12px; height: 12px;
+      border-radius: 3px;
+      cursor: default;
+      position: relative;
+    }
+
+    .mod-dot[title]:hover::after {
+      content: attr(title);
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--canvas-dark);
+      color: white;
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* ── Empty State ── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-light);
+    }
+
+    .empty-state svg { opacity: 0.3; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.95rem; }
+
+    /* ── Footer ── */
+    .table-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      font-size: 0.82rem;
+      color: var(--text-light);
+      background: #FAFAFA;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .summary-row { grid-template-columns: repeat(2, 1fr); }
+      .controls-right { margin-left: 0; }
+      table { font-size: 0.82rem; }
+      td, thead th { padding: 10px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<header>
+  <div class="nav-brand">
+    <div class="dot"></div>
+    AI Trainer &nbsp;|&nbsp; Admin Portal
+  </div>
+  <div class="nav-right">
+    <span>Distance Education Faculty Onboarding</span>
+    <span class="admin-badge">OWNER</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── Page Header ── -->
+  <div class="page-header">
+    <h1>Applicant Training Dashboard</h1>
+    <p>Track module completion, hours logged, and onboarding progress for each faculty member.</p>
+  </div>
+
+  <!-- ── Summary Cards ── -->
+  <div class="summary-row">
+    <div class="summary-card total">
+      <div class="label">Total Applicants</div>
+      <div class="number" id="stat-total">0</div>
+    </div>
+    <div class="summary-card done">
+      <div class="label">Completed</div>
+      <div class="number" id="stat-done">0</div>
+    </div>
+    <div class="summary-card active">
+      <div class="label">In Progress</div>
+      <div class="number" id="stat-progress">0</div>
+    </div>
+    <div class="summary-card pending">
+      <div class="label">Not Started</div>
+      <div class="number" id="stat-pending">0</div>
+    </div>
+  </div>
+
+  <!-- ── Controls ── -->
+  <div class="controls">
+    <div class="filter-group">
+      <label>Status:</label>
+      <button class="filter-btn active"      data-filter="all"      onclick="setFilter('all', this)">All</button>
+      <button class="filter-btn done-btn"    data-filter="completed"  onclick="setFilter('completed', this)">Completed</button>
+      <button class="filter-btn prog-btn"    data-filter="in-progress" onclick="setFilter('in-progress', this)">In Progress</button>
+      <button class="filter-btn pend-btn"    data-filter="not-started" onclick="setFilter('not-started', this)">Not Started</button>
+    </div>
+    <div class="controls-right">
+      <label for="search">Search:</label>
+      <input type="text" id="search" placeholder="Name or email…" oninput="applyFilters()" />
+      <label for="sort-select">Sort:</label>
+      <select id="sort-select" onchange="applyFilters()">
+        <option value="name-asc">Name A–Z</option>
+        <option value="name-desc">Name Z–A</option>
+        <option value="progress-desc">Progress ↓</option>
+        <option value="progress-asc">Progress ↑</option>
+        <option value="hours-desc">Hours ↓</option>
+        <option value="hours-asc">Hours ↑</option>
+        <option value="last-active">Last Active</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ── Table ── -->
+  <div class="table-wrap">
+    <table id="applicant-table" aria-label="Faculty onboarding progress">
+      <thead>
+        <tr>
+          <th>Faculty Member</th>
+          <th>Status</th>
+          <th>Module Progress</th>
+          <th>Completion %</th>
+          <th>Hours Spent</th>
+          <th>Last Active</th>
+          <th>Modules</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+    <div id="empty-state" class="empty-state" style="display:none;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <p>No applicants match your current filters.</p>
+    </div>
+    <div class="table-footer">
+      <span id="footer-count">Showing 0 of 0 applicants</span>
+      <span>Canvas Distance Education · AI Trainer v1.0</span>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // ── Module definitions (10 modules per the challenge overview) ──
+  const MODULE_NAMES = [
+    "Canvas Orientation",
+    "Setting Up Your Shell",
+    "Course Content Upload",
+    "Assignments & Quizzes",
+    "Gradebook & Exports",
+    "Communication Tools",
+    "Accessibility Standards",
+    "Student View & Testing",
+    "LMS Admin Intro",
+    "Capstone & Certification"
+  ];
+
+  // ── Avatar color palette ──
+  const AVATAR_COLORS = [
+    "#E66000","#0770A3","#5B3F9E","#00796B",
+    "#C62828","#2E7D32","#1565C0","#6A1B9A",
+    "#AD1457","#4E342E","#00838F","#37474F"
+  ];
+
+  function getInitials(name) {
+    return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  }
+
+  // ── Seed mock data ──
+  const RAW_DATA = [
+    { id: 1,  name: "Dr. Maria Santos",    email: "m.santos@college.edu",    modulesCompleted: 10, hoursSpent: 14.5, lastActive: "2026-07-21" },
+    { id: 2,  name: "Prof. James Okafor",  email: "j.okafor@college.edu",    modulesCompleted: 10, hoursSpent: 12.0, lastActive: "2026-07-19" },
+    { id: 3,  name: "Dr. Linda Cheng",     email: "l.cheng@college.edu",     modulesCompleted: 10, hoursSpent: 16.0, lastActive: "2026-07-20" },
+    { id: 4,  name: "Prof. Ahmed Yusuf",   email: "a.yusuf@college.edu",     modulesCompleted: 7,  hoursSpent: 9.5,  lastActive: "2026-07-22" },
+    { id: 5,  name: "Dr. Rachel Kim",      email: "r.kim@college.edu",       modulesCompleted: 6,  hoursSpent: 8.0,  lastActive: "2026-07-21" },
+    { id: 6,  name: "Prof. Carlos Rivera", email: "c.rivera@college.edu",    modulesCompleted: 5,  hoursSpent: 6.5,  lastActive: "2026-07-18" },
+    { id: 7,  name: "Dr. Priya Nair",      email: "p.nair@college.edu",      modulesCompleted: 9,  hoursSpent: 13.0, lastActive: "2026-07-22" },
+    { id: 8,  name: "Prof. David Müller",  email: "d.muller@college.edu",    modulesCompleted: 3,  hoursSpent: 4.0,  lastActive: "2026-07-15" },
+    { id: 9,  name: "Dr. Aisha Tremblay",  email: "a.tremblay@college.edu",  modulesCompleted: 0,  hoursSpent: 0.0,  lastActive: "—" },
+    { id: 10, name: "Prof. Steven Park",   email: "s.park@college.edu",      modulesCompleted: 0,  hoursSpent: 0.0,  lastActive: "—" },
+    { id: 11, name: "Dr. Nora Flynn",      email: "n.flynn@college.edu",     modulesCompleted: 8,  hoursSpent: 11.0, lastActive: "2026-07-20" },
+    { id: 12, name: "Prof. Omar Hassan",   email: "o.hassan@college.edu",    modulesCompleted: 2,  hoursSpent: 2.5,  lastActive: "2026-07-14" },
+  ];
+
+  const TOTAL_MODULES = MODULE_NAMES.length;
+
+  // Derive status and completion % from raw data
+  const APPLICANTS = RAW_DATA.map((d, i) => ({
+    ...d,
+    color: AVATAR_COLORS[i % AVATAR_COLORS.length],
+    pct: Math.round((d.modulesCompleted / TOTAL_MODULES) * 100),
+    status: d.modulesCompleted === TOTAL_MODULES ? "completed"
+           : d.modulesCompleted > 0             ? "in-progress"
+           :                                       "not-started"
+  }));
+
+  // ── State ──
+  let currentFilter = "all";
+
+  function setFilter(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const search = document.getElementById("search").value.toLowerCase().trim();
+    const sort   = document.getElementById("sort-select").value;
+
+    let list = APPLICANTS.filter(a => {
+      const matchFilter = currentFilter === "all" || a.status === currentFilter;
+      const matchSearch = !search ||
+        a.name.toLowerCase().includes(search) ||
+        a.email.toLowerCase().includes(search);
+      return matchFilter && matchSearch;
+    });
+
+    // Sorting
+    list.sort((a, b) => {
+      switch (sort) {
+        case "name-asc":       return a.name.localeCompare(b.name);
+        case "name-desc":      return b.name.localeCompare(a.name);
+        case "progress-desc":  return b.pct - a.pct;
+        case "progress-asc":   return a.pct - b.pct;
+        case "hours-desc":     return b.hoursSpent - a.hoursSpent;
+        case "hours-asc":      return a.hoursSpent - b.hoursSpent;
+        case "last-active":    return (b.lastActive > a.lastActive ? 1 : -1);
+        default:               return 0;
+      }
+    });
+
+    renderTable(list);
+    updateStats();
+  }
+
+  function moduleDotsHTML(completed) {
+    return MODULE_NAMES.map((name, i) => {
+      const done = i < completed;
+      const color = done ? "var(--green)" : (i === completed ? "var(--yellow)" : "var(--border)");
+      const label = done ? `✓ ${name}` : (i === completed ? `▶ ${name} (current)` : `◦ ${name}`);
+      return `<div class="mod-dot" style="background:${color}" title="${label}"></div>`;
+    }).join("");
+  }
+
+  function progressBarColor(pct) {
+    if (pct === 100) return "var(--green)";
+    if (pct >= 50)   return "var(--yellow)";
+    if (pct > 0)     return "var(--accent-blue)";
+    return "var(--gray)";
+  }
+
+  function statusBadge(status) {
+    switch (status) {
+      case "completed":   return `<span class="badge badge-done"><span class="dot"></span>Completed</span>`;
+      case "in-progress": return `<span class="badge badge-progress"><span class="dot"></span>In Progress</span>`;
+      default:            return `<span class="badge badge-pending"><span class="dot"></span>Not Started</span>`;
+    }
+  }
+
+  function formatDate(d) {
+    if (d === "—") return `<span class="last-active">—</span>`;
+    const date = new Date(d + "T00:00:00");
+    return `<span class="last-active">${date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>`;
+  }
+
+  function renderTable(list) {
+    const tbody = document.getElementById("table-body");
+    const empty = document.getElementById("empty-state");
+
+    if (list.length === 0) {
+      tbody.innerHTML = "";
+      empty.style.display = "block";
+      document.getElementById("footer-count").textContent = `Showing 0 of ${APPLICANTS.length} applicants`;
+      return;
+    }
+
+    empty.style.display = "none";
+    tbody.innerHTML = list.map(a => `
+      <tr data-status="${a.status}">
+        <td>
+          <div class="applicant-cell">
+            <div class="avatar" style="background:${a.color}">${getInitials(a.name)}</div>
+            <div>
+              <div class="applicant-name">${a.name}</div>
+              <div class="applicant-email">${a.email}</div>
+            </div>
+          </div>
+        </td>
+        <td>${statusBadge(a.status)}</td>
+        <td>
+          <div class="progress-wrap">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:${a.pct}%; background:${progressBarColor(a.pct)}"></div>
+            </div>
+            <span class="progress-pct">${a.modulesCompleted}/${TOTAL_MODULES}</span>
+          </div>
+        </td>
+        <td style="font-weight:700; color:${progressBarColor(a.pct)}">${a.pct}%</td>
+        <td class="hours-cell">${a.hoursSpent > 0 ? a.hoursSpent.toFixed(1) + " hrs" : "—"}</td>
+        <td>${formatDate(a.lastActive)}</td>
+        <td>
+          <div class="modules-cell">${moduleDotsHTML(a.modulesCompleted)}</div>
+        </td>
+      </tr>
+    `).join("");
+
+    document.getElementById("footer-count").textContent =
+      `Showing ${list.length} of ${APPLICANTS.length} applicants`;
+  }
+
+  function updateStats() {
+    const total    = APPLICANTS.length;
+    const done     = APPLICANTS.filter(a => a.status === "completed").length;
+    const progress = APPLICANTS.filter(a => a.status === "in-progress").length;
+    const pending  = APPLICANTS.filter(a => a.status === "not-started").length;
+
+    document.getElementById("stat-total").textContent    = total;
+    document.getElementById("stat-done").textContent     = done;
+    document.getElementById("stat-progress").textContent = progress;
+    document.getElementById("stat-pending").textContent  = pending;
+  }
+
+  // ── Init ──
+  applyFilters();
+</script>
+</body>
+</html>
