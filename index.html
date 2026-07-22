@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AI Study Coach — A conversational onboarding guide for distance education faculty at Canvas." />
+  <title>AI Study Coach | Faculty Onboarding</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ===== NAVIGATION ===== -->
+  <header class="site-header" role="banner">
+    <nav class="nav container" aria-label="Primary navigation">
+      <a href="#" class="nav__logo" aria-label="AI Study Coach home">
+        <span class="logo-icon" aria-hidden="true">🎓</span>
+        <span class="logo-text">AI Study Coach</span>
+      </a>
+      <button class="nav__toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="nav-links">
+        <span class="hamburger" aria-hidden="true"></span>
+      </button>
+      <ul class="nav__links" id="nav-links" role="list">
+        <li><a href="#features" class="nav__link">Features</a></li>
+        <li><a href="#modules" class="nav__link">Modules</a></li>
+        <li><a href="#how-it-works" class="nav__link">How It Works</a></li>
+        <li><a href="#get-started" class="nav__link nav__link--cta">Get Started</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ===== HERO ===== -->
+    <section class="hero" id="hero" aria-labelledby="hero-heading">
+      <div class="hero__bg" aria-hidden="true">
+        <div class="hero__blob hero__blob--1"></div>
+        <div class="hero__blob hero__blob--2"></div>
+      </div>
+      <div class="container hero__inner">
+        <div class="hero__content">
+          <span class="badge">New Faculty Onboarding</span>
+          <h1 class="hero__heading" id="hero-heading">
+            Your personal guide to<br />
+            <span class="gradient-text">Canvas mastery</span>
+          </h1>
+          <p class="hero__sub">
+            Stop digging through scattered documents. AI Study Coach walks you through
+            every Canvas training step — conversationally, at your own pace, with help
+            whenever you need it.
+          </p>
+          <div class="hero__actions">
+            <a href="#get-started" class="btn btn--primary">Start Training</a>
+            <a href="#how-it-works" class="btn btn--ghost">See How It Works</a>
+          </div>
+          <div class="hero__stats" aria-label="Key statistics">
+            <div class="stat">
+              <span class="stat__number" data-target="10">0</span>
+              <span class="stat__label">Guided Modules</span>
+            </div>
+            <div class="stat">
+              <span class="stat__number" data-target="95">0</span><span class="stat__suffix">%</span>
+              <span class="stat__label">Completion Rate</span>
+            </div>
+            <div class="stat">
+              <span class="stat__number" data-target="3">0</span><span class="stat__suffix">x</span>
+              <span class="stat__label">Faster Onboarding</span>
+            </div>
+          </div>
+        </div>
+        <div class="hero__visual" aria-hidden="true">
+          <div class="chat-preview" role="img" aria-label="Conversational coach interface preview">
+            <div class="chat-preview__header">
+              <span class="chat-dot chat-dot--green"></span>
+              <span class="chat-preview__title">AI Study Coach</span>
+            </div>
+            <div class="chat-preview__body">
+              <div class="chat-msg chat-msg--bot">
+                <span class="chat-avatar">🤖</span>
+                <p>Hi! Ready to set up your Canvas shell? Let's start with Module 1.</p>
+              </div>
+              <div class="chat-msg chat-msg--user">
+                <p>Yes, let's go!</p>
+              </div>
+              <div class="chat-msg chat-msg--bot">
+                <span class="chat-avatar">🤖</span>
+                <p>Great — first, navigate to <strong>Courses → New Course</strong> in your dashboard.</p>
+              </div>
+              <div class="chat-typing" aria-label="Coach is typing">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section class="features" id="features" aria-labelledby="features-heading">
+      <div class="container">
+        <div class="section-header">
+          <span class="badge">Why It Works</span>
+          <h2 id="features-heading">Everything you need to onboard with confidence</h2>
+          <p>Built around the real pain points new faculty face — fragmented materials, no guidance, and no way to track progress.</p>
+        </div>
+        <ul class="features__grid" role="list">
+          <li class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">💬</div>
+            <h3>Conversational Guidance</h3>
+            <p>Step-by-step help in plain language. Ask questions mid-task and get context-aware answers without leaving the flow.</p>
+          </li>
+          <li class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">📊</div>
+            <h3>Progress Dashboard</h3>
+            <p>See exactly where you are — "Module 7 of 10" — with stage-gating that keeps the sequence meaningful.</p>
+          </li>
+          <li class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">📚</div>
+            <h3>Indexed Knowledge Base</h3>
+            <p>Draws from existing how-to docs, onboarding videos, and Canvas resources — with citations back to source material.</p>
+          </li>
+          <li class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">🔗</div>
+            <h3>Smart Escalation</h3>
+            <p>Stuck on something deeper? Get routed to live chat, LMS admin email, Instructure support, or a scheduled training call.</p>
+          </li>
+          <li class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">🔒</div>
+            <h3>Sequenced Learning</h3>
+            <p>Modules unlock in order — no skipping ahead — so every faculty member builds the same solid foundation.</p>
+          </li>
+          <li class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">🎓</div>
+            <h3>Graduate to Full Access</h3>
+            <p>After completing all modules, unlock broad policy-based chat and your Canvas shell for full teaching access.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===== MODULES ===== -->
+    <section class="modules" id="modules" aria-labelledby="modules-heading">
+      <div class="container">
+        <div class="section-header">
+          <span class="badge">Training Path</span>
+          <h2 id="modules-heading">Your 10-module onboarding journey</h2>
+          <p>Each module builds on the last. Complete them in sequence and you'll have everything you need to teach online.</p>
+        </div>
+        <ol class="modules__list" aria-label="Onboarding modules">
+          <li class="module-item module-item--active" data-module="1">
+            <div class="module-item__number" aria-hidden="true">01</div>
+            <div class="module-item__body">
+              <h3>Setting Up Your Canvas Shell</h3>
+              <p>Create your course, configure basic settings, and explore the instructor dashboard.</p>
+            </div>
+            <span class="module-item__status module-item__status--current" aria-label="Current module">In Progress</span>
+          </li>
+          <li class="module-item" data-module="2">
+            <div class="module-item__number" aria-hidden="true">02</div>
+            <div class="module-item__body">
+              <h3>Building Course Content</h3>
+              <p>Add pages, files, and multimedia. Organize your syllabus and weekly modules.</p>
+            </div>
+            <span class="module-item__status module-item__status--locked" aria-label="Locked">Locked</span>
+          </li>
+          <li class="module-item" data-module="3">
+            <div class="module-item__number" aria-hidden="true">03</div>
+            <div class="module-item__body">
+              <h3>Assignments &amp; Discussions</h3>
+              <p>Create graded assignments, set due dates, and launch discussion boards.</p>
+            </div>
+            <span class="module-item__status module-item__status--locked" aria-label="Locked">Locked</span>
+          </li>
+          <li class="module-item" data-module="4">
+            <div class="module-item__number" aria-hidden="true">04</div>
+            <div class="module-item__body">
+              <h3>The Gradebook &amp; Exporting Grades</h3>
+              <p>Navigate SpeedGrader, set up grading schemes, and export grades to the SIS.</p>
+            </div>
+            <span class="module-item__status module-item__status--locked" aria-label="Locked">Locked</span>
+          </li>
+          <li class="module-item" data-module="5">
+            <div class="module-item__number" aria-hidden="true">05</div>
+            <div class="module-item__body">
+              <h3>Communicating with Students</h3>
+              <p>Use Announcements, Inbox, and notification settings to stay connected.</p>
+            </div>
+            <span class="module-item__status module-item__status--locked" aria-label="Locked">Locked</span>
+          </li>
+          <li class="module-item" data-module="6">
+            <div class="module-item__number" aria-hidden="true">06</div>
+            <div class="module-item__body">
+              <h3>Quizzes &amp; Assessments</h3>
+              <p>Build quizzes with multiple question types, set time limits, and review analytics.</p>
+            </div>
+            <span class="module-item__status module-item__status--locked" aria-label="Locked">Locked</span>
+          </li>
+          <li class="module-item" data-module="7">
+            <div class="module-item__number" aria-hidden="true">07</div>
+            <div class="module-item__body">
+              <h3>Accessibility &amp; Inclusivity</h3>
+              <p>Apply captioning, alt text, and WCAG guidelines to your course materials.</p>
+            </div>
+            <span class="module-item__status module-item__status--locked" aria-label="Locked">Locked</span>
+          </li>
+          <li class="module-item" data-module="8">
+            <div class="module-item__number" aria-hidden="true">08</div>
+            <div class="module-item__body">
+              <h3>College Policies &amp; Compliance</h3>
+              <p>Review attendance, grading, and academic integrity policies required for distance ed.</p>
+            </div>
+            <span class="module-item__status module-item__status--locked" aria-label="Locked">Locked</span>
+          </li>
+          <li class="module-item" data-module="9">
+            <div class="module-item__number" aria-hidden="true">09</div>
+            <div class="module-item__body">
+              <h3>Getting Support</h3>
+              <p>Know your escalation paths: LMS admin, Instructure 24/7, help desk, and scheduling a training.</p>
+            </div>
+            <span class="module-item__status module-item__status--locked" aria-label="Locked">Locked</span>
+          </li>
+          <li class="module-item" data-module="10">
+            <div class="module-item__number" aria-hidden="true">10</div>
+            <div class="module-item__body">
+              <h3>Final Review &amp; Canvas Shell Access</h3>
+              <p>Complete your capstone checklist and graduate to full Canvas teaching access.</p>
+            </div>
+            <span class="module-item__status module-item__status--locked" aria-label="Locked">Locked</span>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ===== HOW IT WORKS ===== -->
+    <section class="how-it-works" id="how-it-works" aria-labelledby="hiw-heading">
+      <div class="container">
+        <div class="section-header">
+          <span class="badge">The Process</span>
+          <h2 id="hiw-heading">From first login to full access in three steps</h2>
+        </div>
+        <ol class="steps" aria-label="How it works steps">
+          <li class="step">
+            <div class="step__number" aria-hidden="true">1</div>
+            <div class="step__body">
+              <h3>Start a module</h3>
+              <p>Pick up where you left off or begin Module 1. The coach greets you with context and a clear first task.</p>
+            </div>
+          </li>
+          <li class="step">
+            <div class="step__number" aria-hidden="true">2</div>
+            <div class="step__body">
+              <h3>Follow the conversation</h3>
+              <p>Work through each step interactively. Ask questions mid-task — the coach pulls from indexed docs and videos to answer in context.</p>
+            </div>
+          </li>
+          <li class="step">
+            <div class="step__number" aria-hidden="true">3</div>
+            <div class="step__body">
+              <h3>Complete &amp; unlock</h3>
+              <p>Mark steps done and unlock the next module. After all 10, you graduate to full Canvas access and policy-based chat.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ===== CTA ===== -->
+    <section class="cta-section" id="get-started" aria-labelledby="cta-heading">
+      <div class="container cta-section__inner">
+        <div class="cta-section__content">
+          <h2 id="cta-heading">Ready to start your Canvas journey?</h2>
+          <p>Join faculty who've replaced scattered documents with a guided, conversational path to Canvas mastery.</p>
+          <form class="cta-form" novalidate aria-label="Get started form">
+            <div class="form-group">
+              <label for="email" class="sr-only">Your institutional email</label>
+              <input type="email" id="email" name="email" class="form-input"
+                placeholder="Your institutional email" autocomplete="email"
+                aria-required="true" />
+            </div>
+            <button type="submit" class="btn btn--primary btn--lg">Begin Onboarding</button>
+          </form>
+          <p class="cta-section__note">No account needed to start. Your progress is saved automatically.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container footer__inner">
+      <div class="footer__brand">
+        <span class="logo-icon" aria-hidden="true">🎓</span>
+        <span class="logo-text">AI Study Coach</span>
+        <p>Conversational onboarding for distance education faculty.</p>
+      </div>
+      <nav class="footer__links" aria-label="Footer navigation">
+        <h3 class="footer__heading">Resources</h3>
+        <ul role="list">
+          <li><a href="#modules">Training Modules</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#how-it-works">How It Works</a></li>
+        </ul>
+      </nav>
+      <nav class="footer__links" aria-label="Support navigation">
+        <h3 class="footer__heading">Support</h3>
+        <ul role="list">
+          <li><a href="#">Help Desk</a></li>
+          <li><a href="#">LMS Administrator</a></li>
+          <li><a href="#">Instructure 24/7 Support</a></li>
+          <li><a href="#">Schedule a Training</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer__bottom">
+      <div class="container">
+        <p>&copy; <span id="footer-year"></span> AI Study Coach. Built for distance education faculty.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===== CHAT WIDGET ===== -->
+  <div class="chat-widget" id="chat-widget" aria-live="polite">
+    <div class="chat-widget__window" id="chat-window" hidden aria-label="AI Study Coach chat">
+      <div class="chat-widget__header">
+        <span class="chat-dot chat-dot--green" aria-hidden="true"></span>
+        <span>AI Study Coach</span>
+        <button class="chat-widget__close" id="chat-close" aria-label="Close chat">✕</button>
+      </div>
+      <div class="chat-widget__messages" id="chat-messages" role="log" aria-live="polite"></div>
+      <form class="chat-widget__form" id="chat-form" aria-label="Send a message">
+        <label for="chat-input" class="sr-only">Type your message</label>
+        <input type="text" id="chat-input" class="chat-widget__input"
+          placeholder="Ask anything about Canvas…" autocomplete="off" />
+        <button type="submit" class="chat-widget__send" aria-label="Send message">→</button>
+      </form>
+    </div>
+    <button class="chat-widget__toggle" id="chat-toggle" aria-label="Open AI Study Coach chat" aria-expanded="false">
+      <span aria-hidden="true">💬</span>
+    </button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
