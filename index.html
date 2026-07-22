@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Training Coach</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar: Module Progress -->
+    <aside class="sidebar">
+      <h2>Training Modules</h2>
+      <ul class="module-list" id="moduleList">
+        <li class="module-item active" data-module="1">
+          <span class="status">●</span> 1. Canvas Shell Setup
+        </li>
+        <li class="module-item locked" data-module="2">
+          <span class="status">○</span> 2. Course Navigation
+        </li>
+        <li class="module-item locked" data-module="3">
+          <span class="status">○</span> 3. Adding Content
+        </li>
+        <li class="module-item locked" data-module="4">
+          <span class="status">○</span> 4. Assignments & Quizzes
+        </li>
+        <li class="module-item locked" data-module="5">
+          <span class="status">○</span> 5. Grade Export
+        </li>
+        <li class="module-item locked" data-module="6">
+          <span class="status">○</span> 6. Communication Tools
+        </li>
+        <li class="module-item locked" data-module="7">
+          <span class="status">○</span> 7. Student Groups
+        </li>
+        <li class="module-item locked" data-module="8">
+          <span class="status">○</span> 8. Analytics & Reports
+        </li>
+        <li class="module-item locked" data-module="9">
+          <span class="status">○</span> 9. Accessibility
+        </li>
+        <li class="module-item locked" data-module="10">
+          <span class="status">○</span> 10. Final Review
+        </li>
+      </ul>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 10%"></div>
+      </div>
+      <p class="progress-text" id="progressText">Module 1 of 10</p>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <header class="header">
+        <h1>AI Training Coach</h1>
+        <p>Canvas Distance Education Onboarding</p>
+      </header>
+
+      <!-- Chat Interface -->
+      <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+          <div class="message bot-message">
+            <div class="message-avatar">🤖</div>
+            <div class="message-content">
+              <p>Welcome! I'm your AI Training Coach. I'll guide you through Canvas onboarding step by step.</p>
+              <p>Let's start with <strong>Module 1: Canvas Shell Setup</strong>. Are you ready to begin?</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-input-area">
+          <button class="stuck-btn" id="stuckBtn" aria-label="Get help when stuck">I'm stuck</button>
+          <form class="chat-form" id="chatForm">
+            <input
+              type="text"
+              id="chatInput"
+              class="chat-input"
+              placeholder="Type your message..."
+              autocomplete="off"
+              aria-label="Chat message input"
+            />
+            <button type="submit" class="send-btn" aria-label="Send message">Send</button>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
