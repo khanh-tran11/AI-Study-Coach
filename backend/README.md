@@ -4,6 +4,56 @@
 processed Canvas training content (lessons, quizzes, assignments, discussions)
 and returns a grounded, cited answer to a natural-language question.
 
+## Live API endpoint
+
+The query pipeline is deployed as a public HTTP API (frontend teammates can
+call this directly from a browser, CORS is enabled with
+`Access-Control-Allow-Origin: *`):
+
+```
+POST https://yhpt0ck7c7.execute-api.us-west-2.amazonaws.com/ask
+```
+
+**Request body:**
+
+```json
+{ "question": "How do I change the name of my course?" }
+```
+
+**Response body (200):**
+
+```json
+{
+  "answer": "Based on the source document \"lesson-changing-course-names.json\"...",
+  "grounded": true,
+  "sources": ["lesson-changing-course-names.json"]
+}
+```
+
+Out-of-scope questions return `"grounded": false` and `"sources": []`, with
+`answer` explaining that the information isn't available — this is a real
+refusal, not a hallucinated guess (see `_is_refusal()` below).
+
+**Error responses:** missing/empty `question` field or invalid JSON body →
+`400` with `{"error": "..."}`; any unexpected server-side exception → `500`
+with a generic `{"error": "Internal server error."}` (the real exception is
+logged to CloudWatch, never returned to the client).
+
+**Example curl command:**
+
+```bash
+curl -X POST https://yhpt0ck7c7.execute-api.us-west-2.amazonaws.com/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How do I change the name of my course?"}'
+```
+
+**Infrastructure:** Lambda function `canvas-ai-trainer-query` (Python 3.12,
+30s timeout, 256MB memory) behind API Gateway HTTP API `canvas-ai-trainer-api`
+(`yhpt0ck7c7`), route `POST /ask`, `$default` stage with auto-deploy. Execution
+role `canvas-ai-trainer-lambda-role` is scoped to `bedrock:Retrieve` on the
+`canvasAITrainer-v2` KB plus `bedrock:InvokeModel`/`bedrock:Converse`, and
+basic CloudWatch Logs access — nothing broader.
+
 ## Why a two-step retrieve → generate pattern
 
 The knowledge base (`canvasAITrainer-v2`) is a Bedrock **MANAGED**-type
@@ -86,11 +136,16 @@ takes a couple of minutes for ~17 documents.
   earlier version flagged `grounded=True` on some out-of-scope questions
   just because an irrelevant chunk happened to clear the score threshold,
   even though the model correctly refused to answer.
+- Deployed as a live Lambda + API Gateway HTTP API endpoint (see "Live API
+  endpoint" above) — tested end-to-end with real curl requests against the
+  deployed endpoint, including both in-scope and out-of-scope questions, and
+  both error paths (missing field, invalid JSON).
 
 ## What's not built yet
 
-- No API/HTTP layer — this is a script/library only, not wired into any
-  server route or Lambda handler yet.
+- No authentication/rate-limiting on the API endpoint — it's open to anyone
+  with the URL (`AuthorizationType: NONE`). Fine for a hackathon demo, not
+  for anything beyond that.
 - No automatic re-sync when S3 content changes (see gotcha above) — someone
   has to trigger `start-ingestion-job` by hand.
 - No guardrail attached to the knowledge base (`guardrailAction` is always
