@@ -9,9 +9,9 @@ const router  = express.Router();
 // Flask uses session-cookie auth (@login_required). We log in once here
 // and reuse the session cookie for all proxied calls, so the browser
 // never talks to Flask directly (avoids CORS/cross-origin cookie issues).
-const FLASK_BASE = 'http://localhost:5001';
-const FLASK_USERNAME = 'admin';
-const FLASK_PASSWORD = 'admin123';
+const FLASK_BASE = process.env.FLASK_BASE_URL || 'http://localhost:5001';
+const FLASK_USERNAME = process.env.FLASK_USERNAME || 'admin';
+const FLASK_PASSWORD = process.env.FLASK_PASSWORD || 'admin123';
 
 let sessionCookie = null;
 
