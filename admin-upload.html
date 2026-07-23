@@ -245,21 +245,11 @@
     document.getElementById("nav-initials").textContent = session.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
   }
 
-  // ── AI-generated module templates (simulated from uploaded content) ──
-  const MODULE_TEMPLATES = [
-    { title:"Canvas Orientation",        duration:"45 min", topics:["Navigating the Canvas dashboard","Understanding course shells","Locating student roster and settings"],         source:"canvas-orientation-guide.pdf" },
-    { title:"Setting Up Your Shell",     duration:"60 min", topics:["Creating a new course shell","Configuring course details and visibility","Setting enrollment and access dates"],  source:"shell-setup-howto.docx" },
-    { title:"Course Content Upload",     duration:"50 min", topics:["Uploading files and media","Creating pages and modules","Embedding videos and external links"],               source:"content-upload-video.mp4" },
-    { title:"Assignments & Quizzes",     duration:"55 min", topics:["Creating graded assignments","Building quiz banks","Setting due dates and availability windows"],              source:"assignments-guide.pdf" },
-    { title:"Gradebook & Exports",       duration:"40 min", topics:["Reading the Gradebook view","Exporting grades to CSV","Posting and muting grades"],                           source:"gradebook-export.docx" },
-    { title:"Communication Tools",       duration:"35 min", topics:["Sending Canvas Inbox messages","Setting up Announcements","Using Discussion boards effectively"],              source:"comms-guide.pdf" },
-    { title:"Accessibility Standards",   duration:"50 min", topics:["Alt text for images","Captioning video content","Using the Accessibility Checker in Canvas"],                 source:"accessibility-policy.pdf" },
-    { title:"Student View & Testing",    duration:"30 min", topics:["Switching to Student View","Testing submission flows","Checking grade visibility from student perspective"],   source:"student-view-walkthrough.mp4" },
-    { title:"LMS Admin Intro",           duration:"45 min", topics:["Contacting LMS admin support","Escalation paths: Instructure 24/7","Scheduling a training session"],          source:"lms-admin-info.docx" },
-    { title:"Capstone & Certification",  duration:"60 min", topics:["Reviewing all completed modules","Final knowledge check quiz","Receiving your onboarding certificate"],        source:"capstone-assessment.pdf" },
-  ];
+  // ── Preprod pipeline API (real: upload -> S3 -> agentic module generator -> KB) ──
+  const PREPROD_API_BASE = "https://ufmm75g65i.execute-api.us-west-2.amazonaws.com";
 
-  let uploadedFiles = [];
+  let uploadedFiles = [];      // { name, size, status, progress, fileObj, key }
+  let generatedModules = [];   // real modules fetched from GET /modules
   let modulesGenerated = false;
 
   // ── File icon helper ──
@@ -291,10 +281,10 @@
   function addFiles(files) {
     files.forEach(f => {
       if (uploadedFiles.find(u => u.name === f.name)) return; // no dupes
-      uploadedFiles.push({ name:f.name, size:f.size, status:"ready", progress:0 });
+      uploadedFiles.push({ name:f.name, size:f.size, status:"ready", progress:0, fileObj:f, key:null });
     });
     renderQueue();
-    simulateUploads();
+    uploadFiles();
   }
 
   function removeFile(name) {
@@ -328,51 +318,106 @@
     }).join("");
   }
 
-  function simulateUploads() {
-    uploadedFiles.forEach(f => {
-      if (f.status !== "ready") return;
+  async function uploadFiles() {
+    for (const f of uploadedFiles) {
+      if (f.status !== "ready") continue;
       f.status = "parsing"; f.progress = 0;
       renderQueue();
-      const iv = setInterval(() => {
-        f.progress = Math.min(f.progress + Math.random() * 25, 100);
-        if (f.progress >= 100) { f.status = "done"; clearInterval(iv); }
+
+      try {
+        const urlResp = await fetch(`${PREPROD_API_BASE}/upload-url`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: f.name }),
+        });
+        if (!urlResp.ok) throw new Error(`upload-url failed: ${urlResp.status}`);
+        const { uploadUrl, key } = await urlResp.json();
+        f.key = key;
+
+        await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("PUT", uploadUrl);
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              f.progress = (e.loaded / e.total) * 100;
+              renderQueue();
+            }
+          };
+          xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`S3 PUT failed: ${xhr.status}`));
+          xhr.onerror = () => reject(new Error("S3 PUT network error"));
+          xhr.send(f.fileObj);
+        });
+
+        f.progress = 100;
+        f.status = "done";
         renderQueue();
-      }, 300);
-    });
+      } catch (err) {
+        console.error("Upload failed for", f.name, err);
+        f.status = "error";
+        renderQueue();
+        showToast(`Upload failed: ${f.name}`, "error");
+      }
+    }
   }
 
   // ── Generate modules ──
-  function generateModules() {
+  // Upload already triggered the real agentic pipeline (S3 -> Bedrock ->
+  // processed/ JSON) per-file in the background. This just polls the
+  // list-modules endpoint until the expected count of modules shows up,
+  // since generation for each file takes a few seconds after upload.
+  async function generateModules() {
     const btn = document.getElementById("btn-generate");
     btn.disabled = true;
     btn.innerHTML = '<span class="spin">⏳</span> AI is building modules…';
 
-    setTimeout(() => {
-      btn.innerHTML = '✅ Modules Generated!';
-      renderModules();
-      document.getElementById("modules-card").style.display = "block";
-      document.getElementById("s-modules").textContent = MODULE_TEMPLATES.length;
-      document.getElementById("module-count-badge").textContent = MODULE_TEMPLATES.length + " modules";
-      modulesGenerated = true;
-      document.getElementById("modules-card").scrollIntoView({ behavior:"smooth", block:"start" });
-      showToast("10 modules generated from your content!", "success");
-    }, 2200);
+    const expectedCount = uploadedFiles.filter(f => f.status === "done").length;
+    const maxAttempts = 20;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const resp = await fetch(`${PREPROD_API_BASE}/modules`);
+        const data = await resp.json();
+        generatedModules = data.modules || [];
+      } catch (err) {
+        console.error("Failed to fetch modules", err);
+      }
+
+      if (generatedModules.length >= expectedCount && generatedModules.length > 0) break;
+      await new Promise(r => setTimeout(r, 3000));
+    }
+
+    btn.innerHTML = generatedModules.length > 0 ? '✅ Modules Generated!' : '⚠️ No modules yet — try again shortly';
+    renderModules();
+    document.getElementById("modules-card").style.display = "block";
+    document.getElementById("s-modules").textContent = generatedModules.length;
+    document.getElementById("module-count-badge").textContent = generatedModules.length + " modules";
+    modulesGenerated = generatedModules.length > 0;
+    document.getElementById("modules-card").scrollIntoView({ behavior:"smooth", block:"start" });
+    showToast(
+      generatedModules.length > 0
+        ? `${generatedModules.length} module(s) generated from your content!`
+        : "Still processing — some file types (PDF/DOCX/video) aren't supported by the generator yet.",
+      generatedModules.length > 0 ? "success" : "info"
+    );
+    btn.disabled = false;
   }
 
   function renderModules() {
     const list = document.getElementById("module-list");
-    list.innerHTML = MODULE_TEMPLATES.map((m, i) => `
+    list.innerHTML = generatedModules.map((m, i) => `
       <div class="module-item" id="mod-${i}">
         <div class="module-item-header" onclick="toggleModule(${i})">
           <div class="module-num">${i+1}</div>
           <div class="module-title">${m.title}</div>
-          <div class="module-meta">⏱ ${m.duration}</div>
           <span class="module-chevron">▶</span>
         </div>
         <div class="module-body">
-          <strong>Topics covered:</strong>
-          <ul>${m.topics.map(t=>`<li>${t}</li>`).join("")}</ul>
-          <div class="module-source">📎 Source: ${m.source}</div>
+          ${(m.content_blocks || []).map(b => {
+            if (b.tag === "h3") return `<strong>${b.text}</strong>`;
+            if (b.tag === "li") return `<li>${b.text}</li>`;
+            return `<p>${b.text}</p>`;
+          }).join("")}
+          <div class="module-source">📎 Source: ${m.source_file || "unknown"}</div>
         </div>
       </div>`).join("");
   }
