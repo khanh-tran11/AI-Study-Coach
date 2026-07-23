@@ -109,7 +109,8 @@
   border:none; border-radius:var(--radius); font-weight:700; font-size:0.92rem;
   cursor:pointer; transition:background 0.18s;
 }
-.btnContinue:hover { background:var(--hc-burgundy); }
+.btnContinue:hover:not(:disabled) { background:var(--hc-burgundy); }
+.btnContinue:disabled { opacity:0.4; cursor:not-allowed; background:#999; }
 
 /* Progress overlay */
 .progressOverlay {
