@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrator Dashboard - AI Trainer Progress</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header h1 { color: #1a1a2e; }
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .logout-btn:hover { opacity: 0.85; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .tab {
+            flex: 1;
+            padding: 14px 20px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab:hover { background: #f8f9fa; }
+        .tab.active { color: #1a1a2e; border-bottom-color: #1a1a2e; background: #f0f4ff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            flex: 1;
+            text-align: center;
+        }
+        .stat-card h3 { color: #666; font-size: 14px; }
+        .stat-card .number { font-size: 32px; font-weight: bold; color: #1a1a2e; }
+        .stat-card .number.warning { color: #ffc107; }
+        .stat-card .number.danger { color: #dc3545; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-collapse: collapse;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 14px 20px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th { background: #1a1a2e; color: white; }
+        tr:hover { background: #f8f9fa; }
+        .status-completed { background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .status-in_progress { background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .status-warning { background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .status-cheating_reported { background: #f8d7da; color: #721c24; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .status-normal { background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+
+        /* Buttons */
+        .btn { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .btn-complete { background: #28a745; color: white; }
+        .btn-reset { background: #ffc107; color: #333; }
+        .btn-delete { background: #dc3545; color: white; }
+        .btn:hover { opacity: 0.85; }
+        .actions { display: flex; gap: 6px; }
+
+        /* Charts */
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        /* Alert cards */
+        .alert-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            border-left: 4px solid #ffc107;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .alert-card.danger { border-left-color: #dc3545; }
+        .alert-card img { width: 60px; height: 60px; border-radius: 8px; }
+        .alert-info { flex: 1; }
+        .alert-info h4 { color: #333; margin-bottom: 4px; }
+        .alert-info p { color: #666; font-size: 14px; }
+        .alert-count { font-size: 12px; color: #999; margin-top: 4px; }
+
+        /* Report cards */
+        .report-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            border-left: 4px solid #dc3545;
+        }
+        .report-card h4 { color: #dc3545; margin-bottom: 8px; }
+        .report-card p { color: #666; font-size: 14px; }
+
+        /* Auto-refresh indicator */
+        .refresh-indicator {
+            font-size: 12px;
+            color: #28a745;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background: #28a745;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        #message {
+            padding: 10px 16px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            display: none;
+            font-weight: bold;
+        }
+        .msg-success { background: #d4edda; color: #155724; display: block !important; }
+        .msg-error { background: #f8d7da; color: #721c24; display: block !important; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Administrator Dashboard</h1>
+        <div style="display:flex; align-items:center; gap:20px;">
+            <div class="refresh-indicator">
+                <div class="pulse"></div>
+                Live - updates every 5s
+            </div>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </div>
+
+    <div id="message"></div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('tracking')">Employee Tracking</div>
+        <div class="tab" onclick="switchTab('analytics')">Module Analytics</div>
+        <div class="tab" onclick="switchTab('alerts')">Alerts</div>
+        <div class="tab" onclick="switchTab('reports')">Reports</div>
+        <div class="tab" onclick="switchTab('ai')">AI Summary</div>
+    </div>
+
+    <!-- Tab 1: Employee Tracking -->
+    <div id="tracking" class="tab-content active">
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Total Employees</h3>
+                <div class="number" id="totalEmployees">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Completed Modules</h3>
+                <div class="number" id="completedCount">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>In Progress</h3>
+                <div class="number" id="inProgressCount">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Warnings</h3>
+                <div class="number warning" id="warningCount">0</div>
+            </div>
+        </div>
+
+        <!-- Search and Filter Controls -->
+        <div style="display:flex; gap:12px; margin-bottom:15px; flex-wrap:wrap; align-items:center;">
+            <input type="text" id="searchInput" placeholder="Search by name..." oninput="applyFilters()"
+                style="padding:10px 14px; border:1px solid #ddd; border-radius:8px; font-size:14px; width:220px;">
+            <select id="statusFilter" onchange="applyFilters()"
+                style="padding:10px 14px; border:1px solid #ddd; border-radius:8px; font-size:14px;">
+                <option value="all">All Status</option>
+                <option value="completed">Completed</option>
+                <option value="in_progress">In Progress</option>
+            </select>
+            <select id="alertFilter" onchange="applyFilters()"
+                style="padding:10px 14px; border:1px solid #ddd; border-radius:8px; font-size:14px;">
+                <option value="all">All Alerts</option>
+                <option value="normal">Normal</option>
+                <option value="warning">Warnings</option>
+                <option value="cheating_reported">Cheating Reported</option>
+            </select>
+            <span id="showingCount" style="font-size:13px; color:#666; margin-left:auto;"></span>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="cursor:pointer" onclick="sortTable('name')">Employee <span id="sort-name"></span></th>
+                    <th style="cursor:pointer" onclick="sortTable('module')">Module <span id="sort-module"></span></th>
+                    <th style="cursor:pointer" onclick="sortTable('progress')">Status <span id="sort-progress"></span></th>
+                    <th style="cursor:pointer" onclick="sortTable('time_spent')">Time Spent <span id="sort-time_spent"></span></th>
+                    <th style="cursor:pointer" onclick="sortTable('last_updated')">Last Engaged <span id="sort-last_updated"></span></th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="employeeTable"></tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div id="pagination" style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:15px;">
+        </div>
+    </div>
+
+    <!-- Tab 2: Module Analytics -->
+    <div id="analytics" class="tab-content">
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h3 style="margin-bottom:15px; color:#1a1a2e;">Average Time per Module</h3>
+                <canvas id="avgTimeChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3 style="margin-bottom:15px; color:#1a1a2e;">Time vs Expected (30 min)</h3>
+                <canvas id="comparisonChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-container">
+            <h3 style="margin-bottom:15px; color:#1a1a2e;">Individual Time per Employee</h3>
+            <canvas id="employeeTimeChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Tab 3: Alerts -->
+    <div id="alerts" class="tab-content">
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Active Warnings</h3>
+                <div class="number warning" id="activeWarnings">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Cheating Reports</h3>
+                <div class="number danger" id="cheatingReports">0</div>
+            </div>
+        </div>
+        <div id="alertsList"></div>
+        <p id="noAlerts" style="text-align:center; color:#666; padding:40px; display:none;">No alerts at this time.</p>
+    </div>
+
+    <!-- Challenge Modal -->
+    <div id="challengeModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; border-radius:16px; padding:30px; max-width:550px; width:90%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="text-align:center; margin-bottom:20px;">
+                <img id="challengeGif" src="" alt="funny gif" style="width:120px; height:120px; border-radius:12px; object-fit:cover;">
+                <p id="challengeGifCaption" style="color:#666; font-size:13px; margin-top:8px; font-style:italic;"></p>
+            </div>
+            <h3 id="challengeTitle" style="color:#1a1a2e; margin-bottom:8px;"></h3>
+            <p id="challengeQuestion" style="color:#333; margin-bottom:20px; line-height:1.5;"></p>
+            <div id="challengeOptions" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;"></div>
+            <div id="challengeResult" style="display:none; padding:12px; border-radius:8px; margin-bottom:15px; font-weight:bold; text-align:center;"></div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button onclick="closeChallengeModal()" class="btn" style="background:#6c757d; color:white; padding:10px 20px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 4: Reports -->
+    <div id="reports" class="tab-content">
+        <div id="reportsList"></div>
+        <p id="noReports" style="text-align:center; color:#666; padding:40px; display:none;">No cheating reports at this time.</p>
+    </div>
+
+    <!-- Tab 5: AI Summary -->
+    <div id="ai" class="tab-content">
+        <div style="display:flex; gap:20px; flex-wrap:wrap;">
+            <!-- AI Summary Card -->
+            <div style="flex:2; min-width:300px;">
+                <div class="chart-container">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3 style="color:#1a1a2e;">🤖 AI Progress Summary</h3>
+                        <button class="btn btn-complete" style="padding:8px 16px;" onclick="loadAiSummary()">Refresh Summary</button>
+                    </div>
+                    <div id="aiSummaryContent" style="white-space:pre-wrap; line-height:1.6; font-size:14px; color:#333;">
+                        Click "Refresh Summary" to generate AI insights...
+                    </div>
+                </div>
+            </div>
+            <!-- Deadline Warnings -->
+            <div style="flex:1; min-width:280px;">
+                <div class="chart-container">
+                    <h3 style="color:#1a1a2e; margin-bottom:15px;">⏰ Deadline Warnings</h3>
+                    <p style="font-size:12px; color:#666; margin-bottom:12px;">Email reminders: 7 days, 3 days, 1 day before deadline</p>
+                    <div id="deadlineList"></div>
+                    <p id="noDeadlines" style="text-align:center; color:#666; padding:20px; display:none;">All employees on track!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = "http://localhost:5001";
+        let avgTimeChart, comparisonChart, employeeTimeChart;
+        let refreshInterval;
+        let allData = [];
+        let filteredData = [];
+        let currentPage = 1;
+        const PAGE_SIZE = 10;
+        let sortField = "name";
+        let sortAsc = true;
+
+        function formatTimeAgo(dateStr) {
+            if (!dateStr) return "-";
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000);
+            if (diff < 60) return "Just now";
+            if (diff < 3600) return `${Math.floor(diff/60)} min ago`;
+            if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+            if (diff < 604800) return `${Math.floor(diff/86400)}d ago`;
+            return date.toLocaleDateString();
+        }
+
+        // --- TAB SWITCHING ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach((t, i) => {
+                const tabs = ['tracking', 'analytics', 'alerts', 'reports', 'ai'];
+                t.classList.toggle('active', tabs[i] === tabName);
+            });
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+
+            if (tabName === 'analytics') loadAnalytics();
+            if (tabName === 'alerts') loadAlerts();
+            if (tabName === 'reports') loadReports();
+            if (tabName === 'ai') loadDeadlines();
+        }
+
+        // --- EMPLOYEE TRACKING ---
+        async function loadEmployees() {
+            try {
+                const res = await fetch(`${API}/manager/employees`);
+                allData = await res.json();
+                updateStats(allData);
+                applyFilters();
+            } catch (err) {
+                showMessage("Failed to load data: " + err.message, "error");
+            }
+        }
+
+        function applyFilters() {
+            const search = document.getElementById("searchInput").value.toLowerCase();
+            const statusFilter = document.getElementById("statusFilter").value;
+            const alertFilter = document.getElementById("alertFilter").value;
+
+            filteredData = allData.filter(item => {
+                const matchSearch = item.name.toLowerCase().includes(search);
+                const matchStatus = statusFilter === "all" || item.progress === statusFilter;
+                const matchAlert = alertFilter === "all" || (item.alert_status || "normal") === alertFilter;
+                return matchSearch && matchStatus && matchAlert;
+            });
+
+            sortData();
+            currentPage = 1;
+            renderTable();
+            renderPagination();
+        }
+
+        function sortTable(field) {
+            if (sortField === field) {
+                sortAsc = !sortAsc;
+            } else {
+                sortField = field;
+                sortAsc = true;
+            }
+            // Update sort indicators
+            document.querySelectorAll('[id^="sort-"]').forEach(el => el.textContent = '');
+            const indicator = document.getElementById(`sort-${field}`);
+            if (indicator) indicator.textContent = sortAsc ? '▲' : '▼';
+
+            sortData();
+            renderTable();
+        }
+
+        function sortData() {
+            filteredData.sort((a, b) => {
+                let valA = a[sortField] || "";
+                let valB = b[sortField] || "";
+                if (sortField === "time_spent") {
+                    valA = parseFloat(valA) || 0;
+                    valB = parseFloat(valB) || 0;
+                } else {
+                    valA = valA.toString().toLowerCase();
+                    valB = valB.toString().toLowerCase();
+                }
+                if (valA < valB) return sortAsc ? -1 : 1;
+                if (valA > valB) return sortAsc ? 1 : -1;
+                return 0;
+            });
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById("employeeTable");
+            tbody.innerHTML = "";
+
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end = start + PAGE_SIZE;
+            const pageData = filteredData.slice(start, end);
+
+            document.getElementById("showingCount").textContent =
+                `Showing ${start + 1}-${Math.min(end, filteredData.length)} of ${filteredData.length}`;
+
+            pageData.forEach(item => {
+                const timeSpent = item.time_spent ? `${item.time_spent} min` : "-";
+                const lastEngaged = item.last_updated ? formatTimeAgo(item.last_updated) : "-";
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.module}</td>
+                    <td><span class="status-${item.progress}">${item.progress}</span></td>
+                    <td>${timeSpent}</td>
+                    <td title="${item.last_updated || ''}">${lastEngaged}</td>
+                    <td class="actions">
+                        ${item.progress !== "completed"
+                            ? `<button class="btn btn-complete" onclick="updateStatus('${item.name}','${item.module}','completed')">Mark Complete</button>`
+                            : `<button class="btn btn-reset" onclick="updateStatus('${item.name}','${item.module}','in_progress')">Reset</button>`
+                        }
+                        <button class="btn btn-delete" onclick="deleteEmployee('${item.name}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
+            const container = document.getElementById("pagination");
+            container.innerHTML = "";
+
+            if (totalPages <= 1) return;
+
+            // Prev button
+            const prev = document.createElement("button");
+            prev.textContent = "← Prev";
+            prev.className = "btn";
+            prev.style.background = currentPage === 1 ? "#ccc" : "#1a1a2e";
+            prev.style.color = "white";
+            prev.disabled = currentPage === 1;
+            prev.onclick = () => { currentPage--; renderTable(); renderPagination(); };
+            container.appendChild(prev);
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement("button");
+                btn.textContent = i;
+                btn.className = "btn";
+                btn.style.background = i === currentPage ? "#1a1a2e" : "#e9ecef";
+                btn.style.color = i === currentPage ? "white" : "#333";
+                btn.onclick = () => { currentPage = i; renderTable(); renderPagination(); };
+                container.appendChild(btn);
+            }
+
+            // Next button
+            const next = document.createElement("button");
+            next.textContent = "Next →";
+            next.className = "btn";
+            next.style.background = currentPage === totalPages ? "#ccc" : "#1a1a2e";
+            next.style.color = "white";
+            next.disabled = currentPage === totalPages;
+            next.onclick = () => { currentPage++; renderTable(); renderPagination(); };
+            container.appendChild(next);
+        }
+
+        function updateStats(data) {
+            const names = [...new Set(data.map(d => d.name))];
+            const completed = data.filter(d => d.progress === "completed").length;
+            const inProgress = data.filter(d => d.progress === "in_progress").length;
+            const warnings = data.filter(d => parseInt(d.alert_count || 0) > 0).length;
+            document.getElementById("totalEmployees").textContent = names.length;
+            document.getElementById("completedCount").textContent = completed;
+            document.getElementById("inProgressCount").textContent = inProgress;
+            document.getElementById("warningCount").textContent = warnings;
+        }
+
+        async function updateStatus(name, module, status) {
+            try {
+                await fetch(`${API}/manager/employees/${name}/modules/${module}`, {
+                    method: "PUT",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({progress: status})
+                });
+                showMessage(`Updated ${name} - ${module} to ${status}`, "success");
+                loadEmployees();
+            } catch (err) {
+                showMessage("Update failed: " + err.message, "error");
+            }
+        }
+
+        async function deleteEmployee(name) {
+            if (!confirm(`Delete all records for ${name}?`)) return;
+            try {
+                await fetch(`${API}/manager/employees/${name}`, {method: "DELETE"});
+                showMessage(`${name} removed`, "success");
+                loadEmployees();
+            } catch (err) {
+                showMessage("Delete failed: " + err.message, "error");
+            }
+        }
+
+        // --- ANALYTICS ---
+        async function loadAnalytics() {
+            try {
+                const res = await fetch(`${API}/manager/analytics`);
+                const data = await res.json();
+                renderCharts(data);
+            } catch (err) {
+                showMessage("Failed to load analytics: " + err.message, "error");
+            }
+        }
+
+        function renderCharts(data) {
+            const modules = data.map(d => d.module);
+            const avgTimes = data.map(d => d.avg_time);
+            const expectedTimes = data.map(d => d.expected_time);
+
+            // Destroy old charts
+            if (avgTimeChart) avgTimeChart.destroy();
+            if (comparisonChart) comparisonChart.destroy();
+            if (employeeTimeChart) employeeTimeChart.destroy();
+
+            // Chart 1: Average time per module (bar)
+            avgTimeChart = new Chart(document.getElementById('avgTimeChart'), {
+                type: 'bar',
+                data: {
+                    labels: modules,
+                    datasets: [{
+                        label: 'Avg Time (min)',
+                        data: avgTimes,
+                        backgroundColor: avgTimes.map(t => t < 5 ? '#dc354580' : t < 30 ? '#ffc10780' : '#28a74580'),
+                        borderColor: avgTimes.map(t => t < 5 ? '#dc3545' : t < 30 ? '#ffc107' : '#28a745'),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Minutes' } } }
+                }
+            });
+
+            // Chart 2: Comparison with expected time (line + bar)
+            comparisonChart = new Chart(document.getElementById('comparisonChart'), {
+                type: 'bar',
+                data: {
+                    labels: modules,
+                    datasets: [
+                        {
+                            label: 'Actual Avg (min)',
+                            data: avgTimes,
+                            backgroundColor: '#667eea80',
+                            borderColor: '#667eea',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Expected (30 min)',
+                            data: expectedTimes,
+                            backgroundColor: '#28a74540',
+                            borderColor: '#28a745',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true, title: { display: true, text: 'Minutes' } } } }
+            });
+
+            // Chart 3: Individual employee times (grouped)
+            const allEmployees = [...new Set(data.flatMap(d => d.employees))];
+            const datasets = allEmployees.map((emp, i) => {
+                const colors = ['#667eea', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6f42c1'];
+                const color = colors[i % colors.length];
+                return {
+                    label: emp,
+                    data: data.map(d => {
+                        const idx = d.employees.indexOf(emp);
+                        return idx >= 0 ? d.times[idx] : 0;
+                    }),
+                    backgroundColor: color + '80',
+                    borderColor: color,
+                    borderWidth: 2
+                };
+            });
+
+            employeeTimeChart = new Chart(document.getElementById('employeeTimeChart'), {
+                type: 'bar',
+                data: { labels: modules, datasets: datasets },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Minutes' } } }
+                }
+            });
+        }
+
+        // --- ALERTS ---
+        let currentChallenge = null;
+
+        async function loadAlerts() {
+            try {
+                const res = await fetch(`${API}/manager/alerts`);
+                const data = await res.json();
+                renderAlerts(data);
+            } catch (err) {
+                showMessage("Failed to load alerts: " + err.message, "error");
+            }
+        }
+
+        function renderAlerts(data) {
+            const container = document.getElementById("alertsList");
+            const noAlerts = document.getElementById("noAlerts");
+            container.innerHTML = "";
+
+            if (data.length === 0) {
+                noAlerts.style.display = "block";
+                document.getElementById("activeWarnings").textContent = "0";
+                document.getElementById("cheatingReports").textContent = "0";
+                return;
+            }
+            noAlerts.style.display = "none";
+
+            const warnings = data.filter(d => d.alert_status === "warning").length;
+            const cheating = data.filter(d => d.alert_status === "cheating_reported").length;
+            document.getElementById("activeWarnings").textContent = warnings;
+            document.getElementById("cheatingReports").textContent = cheating;
+
+            // Different funny gifs per warning level
+            const gifs = {
+                1: { url: "https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif", caption: "🤔 Oops! Better luck next time, back to the lecture!" },
+                2: { url: "https://media.giphy.com/media/l3q2K5jinAlChoCLS/giphy.gif", caption: "👀 Uh oh... one more and you're out!" },
+                3: { url: "https://media.giphy.com/media/3oEjHAUOqG3lSS0f1C/giphy.gif", caption: "🚨 Hey friend, we need to chat. Your manager has been notified. Let's sort this out together!" },
+            };
+
+            data.forEach(item => {
+                const alertCount = parseInt(item.alert_count || 0);
+                const isDanger = alertCount >= 3;
+                const level = Math.min(alertCount, 3) || 1;
+                const gifData = gifs[level];
+
+                let message;
+                if (isDanger) {
+                    message = "We see issues from your side. We report to the manager, please contact to redo the assignment.";
+                } else {
+                    message = "How can you done it so quickly?";
+                }
+
+                const card = document.createElement("div");
+                card.className = `alert-card ${isDanger ? 'danger' : ''}`;
+                card.innerHTML = `
+                    <img src="${gifData.url}" alt="funny gif">
+                    <div class="alert-info">
+                        <h4>${item.name} - ${item.module}</h4>
+                        <p>${message}</p>
+                        <p style="font-size:12px; color:#888; font-style:italic;">"${gifData.caption}"</p>
+                        <div class="alert-count">
+                            Time spent: ${item.time_spent || '?'} min | Warnings: ${alertCount}/3 |
+                            Status: <span class="status-${item.alert_status}">${item.alert_status}</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-complete" style="padding:10px 16px;" onclick="sendChallenge('${item.name}','${item.module}')">
+                        Send Challenge
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- CHALLENGE SYSTEM ---
+        async function sendChallenge(name, module) {
+            try {
+                const res = await fetch(`${API}/manager/challenge/${encodeURIComponent(name)}/${encodeURIComponent(module)}`);
+                const data = await res.json();
+                currentChallenge = data;
+                showChallengeModal(data);
+            } catch (err) {
+                showMessage("Failed to load challenge: " + err.message, "error");
+            }
+        }
+
+        function showChallengeModal(data) {
+            document.getElementById("challengeGif").src = data.gif;
+            document.getElementById("challengeGifCaption").textContent = data.gif_caption;
+            document.getElementById("challengeTitle").textContent = `Challenge for ${data.name} - ${data.module}`;
+            document.getElementById("challengeQuestion").textContent = data.question;
+            document.getElementById("challengeResult").style.display = "none";
+
+            const optionsDiv = document.getElementById("challengeOptions");
+            optionsDiv.innerHTML = "";
+            data.options.forEach(option => {
+                const btn = document.createElement("button");
+                btn.textContent = option;
+                btn.style.cssText = "padding:12px 16px; border:2px solid #ddd; border-radius:8px; background:white; cursor:pointer; text-align:left; font-size:14px; transition:all 0.2s;";
+                btn.onmouseover = () => { btn.style.borderColor = '#667eea'; btn.style.background = '#f0f4ff'; };
+                btn.onmouseout = () => { btn.style.borderColor = '#ddd'; btn.style.background = 'white'; };
+                btn.onclick = () => submitAnswer(option.charAt(0), data);
+                optionsDiv.appendChild(btn);
+            });
+
+            const modal = document.getElementById("challengeModal");
+            modal.style.display = "flex";
+        }
+
+        async function submitAnswer(answer, challengeData) {
+            try {
+                const res = await fetch(`${API}/manager/verify/${encodeURIComponent(challengeData.name)}/${encodeURIComponent(challengeData.module)}`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        answer: answer,
+                        correct_option: challengeData.correct_option,
+                        question: challengeData.question
+                    })
+                });
+                const result = await res.json();
+
+                const resultDiv = document.getElementById("challengeResult");
+                resultDiv.style.display = "block";
+
+                if (result.is_correct) {
+                    resultDiv.style.background = "#d4edda";
+                    resultDiv.style.color = "#155724";
+                    resultDiv.textContent = "Correct! Employee passed verification.";
+                } else {
+                    resultDiv.style.background = result.locked ? "#1a1a2e" : "#f8d7da";
+                    resultDiv.style.color = result.locked ? "#fff" : "#721c24";
+                    resultDiv.innerHTML = `
+                        <p style="font-size:16px; font-weight:bold;">${result.locked ? '🔒 LOCKED' : '↩️ Sent back to lecture'}</p>
+                        <p style="margin-top:8px;">${result.message}</p>
+                        ${result.feedback ? `<div style="margin-top:10px; padding:10px; background:${result.locked ? 'rgba(255,255,255,0.1)' : '#fff3cd'}; border-radius:8px; font-size:13px; color:${result.locked ? '#ffc107' : '#856404'};">
+                            <strong>📝 AI Feedback:</strong><br>${result.feedback}
+                        </div>` : ''}
+                        ${result.gif ? `<img src="${result.gif}" style="width:80px; height:80px; border-radius:8px; margin-top:10px;">` : ''}
+                        ${result.gif_caption ? `<p style="font-size:12px; margin-top:4px; opacity:0.8;">"${result.gif_caption}"</p>` : ''}
+                        ${result.locked ? `
+                            <div style="margin-top:15px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.2);">
+                                <p style="font-size:13px; margin-bottom:8px;">Want to redo? Reach out to your manager:</p>
+                                <textarea id="contactMessage" placeholder="Type your message to manager..." style="width:100%; padding:8px; border-radius:6px; border:none; font-size:13px; min-height:60px; color:#333;"></textarea>
+                                <button onclick="sendContactRequest('${challengeData.name}','${challengeData.module}')" style="margin-top:8px; padding:10px 20px; background:#28a745; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">📩 Contact Manager</button>
+                            </div>
+                        ` : ''}
+                    `;
+                }
+
+                // Disable option buttons after answer
+                document.querySelectorAll('#challengeOptions button').forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.cursor = 'not-allowed';
+                    btn.style.opacity = '0.6';
+                });
+
+                // Refresh alerts and tracking
+                loadAlerts();
+                loadEmployees();
+            } catch (err) {
+                showMessage("Verification failed: " + err.message, "error");
+            }
+        }
+
+        function closeChallengeModal() {
+            document.getElementById("challengeModal").style.display = "none";
+            currentChallenge = null;
+        }
+
+        async function sendContactRequest(name, module) {
+            const message = document.getElementById("contactMessage").value;
+            try {
+                const res = await fetch(`${API}/manager/contact/${encodeURIComponent(name)}/${encodeURIComponent(module)}`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({message: message})
+                });
+                const data = await res.json();
+                showMessage(data.message, "success");
+                // Replace button with confirmation
+                const resultDiv = document.getElementById("challengeResult");
+                const contactDiv = resultDiv.querySelector('div[style*="border-top"]');
+                if (contactDiv) {
+                    contactDiv.innerHTML = '<p style="color:#28a745; font-weight:bold;">✅ Message sent! Manager will review your request.</p>';
+                }
+            } catch (err) {
+                showMessage("Failed to send contact request: " + err.message, "error");
+            }
+        }
+
+        // --- REPORTS ---
+        async function loadReports() {
+            try {
+                const [reportsRes, contactRes] = await Promise.all([
+                    fetch(`${API}/manager/reports`),
+                    fetch(`${API}/manager/contact-requests`)
+                ]);
+                const reports = await reportsRes.json();
+                const contacts = await contactRes.json();
+                renderReports(reports, contacts);
+            } catch (err) {
+                showMessage("Failed to load reports: " + err.message, "error");
+            }
+        }
+
+        function renderReports(reports, contacts) {
+            const container = document.getElementById("reportsList");
+            const noReports = document.getElementById("noReports");
+            container.innerHTML = "";
+
+            if (reports.length === 0 && contacts.length === 0) {
+                noReports.style.display = "block";
+                return;
+            }
+            noReports.style.display = "none";
+
+            // Contact requests first
+            if (contacts.length > 0) {
+                const header = document.createElement("h3");
+                header.style.cssText = "margin-bottom:15px; color:#28a745;";
+                header.textContent = `📩 Employee Messages (${contacts.length})`;
+                container.appendChild(header);
+
+                contacts.forEach(item => {
+                    const card = document.createElement("div");
+                    card.className = "report-card";
+                    card.style.borderLeftColor = "#28a745";
+                    card.innerHTML = `
+                        <h4 style="color:#28a745;">MESSAGE FROM: ${item.name}</h4>
+                        <p><strong>Module:</strong> ${item.module}</p>
+                        <p><strong>Their message:</strong> "${item.contact_message || 'No message provided'}"</p>
+                        <p><strong>Sent at:</strong> ${item.contact_time || 'N/A'}</p>
+                        <p><strong>Warnings:</strong> ${item.alert_count || 0}</p>
+                        <div style="margin-top:12px; display:flex; gap:10px;">
+                            <button class="btn btn-complete" style="padding:10px 20px;" onclick="unlockEmployee('${item.name}','${item.module}')">🔓 Unlock & Allow Redo</button>
+                            <button class="btn" style="padding:10px 20px; background:#667eea; color:white;" onclick="openReplyBox('${item.name}','${item.module}')">💬 Reply</button>
+                        </div>
+                        <div id="reply-${item.name}-${item.module.replace(/ /g,'_')}" style="display:none; margin-top:10px;">
+                            <textarea placeholder="Type reply to ${item.name}..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; min-height:60px; font-size:13px;"></textarea>
+                            <button class="btn btn-complete" style="margin-top:6px; padding:8px 16px;" onclick="sendReply('${item.name}','${item.module}', this)">Send Reply</button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+
+            // Cheating reports
+            if (reports.length > 0) {
+                const header = document.createElement("h3");
+                header.style.cssText = "margin-top:25px; margin-bottom:15px; color:#dc3545;";
+                header.textContent = `🚨 Cheating Reports (${reports.length})`;
+                container.appendChild(header);
+
+                reports.forEach(item => {
+                    const hasContact = item.contact_requested === "true";
+                    const card = document.createElement("div");
+                    card.className = "report-card";
+                    card.innerHTML = `
+                        <h4>REPORT: ${item.name}</h4>
+                        <p><strong>Module:</strong> ${item.module}</p>
+                        <p><strong>Time spent:</strong> ${item.time_spent || '?'} min (Expected: 30 min)</p>
+                        <p><strong>Warnings:</strong> ${item.alert_count || 0}</p>
+                        <p><strong>Employee contacted:</strong> ${hasContact ? '✅ Yes' : '⏳ Waiting...'}</p>
+                        <p style="margin-top:8px; font-size:12px; color:#999;">Last updated: ${item.last_updated || 'N/A'}</p>
+                        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+                            <button class="btn btn-complete" style="padding:10px 20px;" onclick="unlockEmployee('${item.name}','${item.module}')">🔓 Unlock & Allow Redo</button>
+                            <button class="btn" style="padding:10px 20px; background:#667eea; color:white;" onclick="draftEmail('${item.name}','${item.module}','cheating')">📧 Draft Email</button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+        }
+
+        function openReplyBox(name, module) {
+            const id = `reply-${name}-${module.replace(/ /g,'_')}`;
+            const el = document.getElementById(id);
+            if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function sendReply(name, module, btn) {
+            const textarea = btn.previousElementSibling;
+            const msg = textarea.value;
+            if (!msg) return;
+            btn.parentElement.innerHTML = `<p style="color:#28a745; font-weight:bold;">✅ Reply sent to ${name}!</p>`;
+            showMessage(`Reply sent to ${name}`, "success");
+        }
+
+        async function unlockEmployee(name, module) {
+            if (!confirm(`Unlock ${name} for ${module}? They can redo the assignment.`)) return;
+            try {
+                await fetch(`${API}/manager/unlock/${encodeURIComponent(name)}/${encodeURIComponent(module)}`, {method: "POST"});
+                showMessage(`${name} unlocked for ${module}`, "success");
+                loadReports();
+                loadEmployees();
+            } catch (err) {
+                showMessage("Unlock failed: " + err.message, "error");
+            }
+        }
+
+        // --- AI SUMMARY ---
+        async function loadAiSummary() {
+            const content = document.getElementById("aiSummaryContent");
+            content.innerHTML = '<p style="color:#667eea;">🔄 Generating AI summary...</p>';
+            try {
+                const res = await fetch(`${API}/manager/ai-summary`);
+                const data = await res.json();
+                // Convert markdown-like formatting to HTML
+                let html = data.summary
+                    .replace(/## (.*)/g, '<h3 style="color:#1a1a2e; margin-top:15px;">$1</h3>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/- (.*)/g, '<li style="margin-left:16px;">$1</li>')
+                    .replace(/\n/g, '<br>');
+                content.innerHTML = html;
+            } catch (err) {
+                content.innerHTML = `<p style="color:#dc3545;">Failed to load summary: ${err.message}</p>`;
+            }
+        }
+
+        // --- DEADLINES ---
+        async function loadDeadlines() {
+            try {
+                const res = await fetch(`${API}/manager/deadlines`);
+                const data = await res.json();
+                renderDeadlines(data);
+            } catch (err) {
+                showMessage("Failed to load deadlines: " + err.message, "error");
+            }
+        }
+
+        function renderDeadlines(data) {
+            const container = document.getElementById("deadlineList");
+            const noDeadlines = document.getElementById("noDeadlines");
+            container.innerHTML = "";
+
+            if (data.length === 0) {
+                noDeadlines.style.display = "block";
+                return;
+            }
+            noDeadlines.style.display = "none";
+
+            const colors = {overdue: "#dc3545", urgent: "#dc3545", warning: "#ffc107", reminder: "#667eea"};
+            const icons = {overdue: "🚨", urgent: "⚠️", warning: "📢", reminder: "📅"};
+
+            data.forEach(item => {
+                const color = colors[item.warning_type] || "#666";
+                const icon = icons[item.warning_type] || "📅";
+                const card = document.createElement("div");
+                card.style.cssText = `padding:12px; border-left:3px solid ${color}; background:#f8f9fa; border-radius:6px; margin-bottom:8px;`;
+                card.innerHTML = `
+                    <div style="font-weight:bold; font-size:13px;">${icon} ${item.name}</div>
+                    <div style="font-size:12px; color:#666;">${item.module}</div>
+                    <div style="font-size:12px; color:${color}; font-weight:bold; margin-top:4px;">${item.message}</div>
+                    <div style="font-size:11px; color:#999; margin-top:4px;">${item.email_reminders.join(' → ')}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- AI EMAIL DRAFTING ---
+        async function draftEmail(name, module, reason) {
+            try {
+                const res = await fetch(`${API}/manager/draft-email`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({name, module, reason})
+                });
+                const data = await res.json();
+                // Show in a simple modal
+                const emailHtml = data.email.replace(/\n/g, '<br>');
+                const overlay = document.createElement('div');
+                overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:2000;display:flex;justify-content:center;align-items:center;';
+                overlay.innerHTML = `
+                    <div style="background:white;border-radius:12px;padding:25px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;">
+                        <h3 style="margin-bottom:12px;">📧 Draft Email to ${name}</h3>
+                        <div style="background:#f8f9fa;padding:15px;border-radius:8px;font-size:14px;line-height:1.6;white-space:pre-wrap;">${emailHtml}</div>
+                        <div style="margin-top:15px;display:flex;gap:10px;justify-content:flex-end;">
+                            <button onclick="this.closest('div[style*=fixed]').remove()" class="btn" style="background:#6c757d;color:white;padding:10px 20px;">Close</button>
+                            <button onclick="navigator.clipboard.writeText(\`${data.email.replace(/`/g,'\\`')}\`);this.textContent='Copied!'" class="btn btn-complete" style="padding:10px 20px;">📋 Copy</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+            } catch (err) {
+                showMessage("Failed to draft email: " + err.message, "error");
+            }
+        }
+
+        // --- UTILITY ---
+        function showMessage(text, type) {
+            const el = document.getElementById("message");
+            el.textContent = text;
+            el.className = type === "success" ? "msg-success" : "msg-error";
+            setTimeout(() => { el.className = ""; }, 3000);
+        }
+
+        // --- AUTO REFRESH (every 5 seconds) ---
+        function startAutoRefresh() {
+            loadEmployees();
+            refreshInterval = setInterval(() => {
+                loadEmployees();
+                // Refresh current active tab data
+                const activeTab = document.querySelector('.tab-content.active');
+                if (activeTab.id === 'alerts') loadAlerts();
+                if (activeTab.id === 'reports') loadReports();
+            }, 5000);
+        }
+
+        startAutoRefresh();
+    </script>
+
+    <!-- FAQ Chatbox Widget -->
+    <div id="faqWidget" style="position:fixed; bottom:20px; right:20px; z-index:999;">
+        <button onclick="toggleFaqChat()" style="width:56px; height:56px; border-radius:50%; background:#1a1a2e; color:white; border:none; cursor:pointer; font-size:24px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">💬</button>
+    </div>
+    <div id="faqChat" style="display:none; position:fixed; bottom:90px; right:20px; width:360px; max-height:500px; background:white; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.2); z-index:999; overflow:hidden; flex-direction:column;">
+        <div style="background:#1a1a2e; color:white; padding:14px 18px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:bold;">💬 FAQ & Help</span>
+            <button onclick="toggleFaqChat()" style="background:none; border:none; color:white; font-size:18px; cursor:pointer;">✕</button>
+        </div>
+        <div id="faqMessages" style="flex:1; padding:14px; overflow-y:auto; max-height:340px; font-size:13px;">
+            <div style="background:#f0f4ff; padding:10px; border-radius:8px; margin-bottom:10px;">
+                <p style="font-weight:bold; margin-bottom:6px;">Frequently Asked Questions:</p>
+                <button class="faq-btn" onclick="faqAnswer('locked')">🔒 Why am I locked out?</button>
+                <button class="faq-btn" onclick="faqAnswer('redo')">🔄 How do I redo an assignment?</button>
+                <button class="faq-btn" onclick="faqAnswer('time')">⏱️ Why does time matter?</button>
+                <button class="faq-btn" onclick="faqAnswer('challenge')">❓ What is a challenge question?</button>
+                <button class="faq-btn" onclick="faqAnswer('contact')">📩 How do I contact my manager?</button>
+            </div>
+        </div>
+        <div style="padding:10px; border-top:1px solid #eee; display:flex; gap:8px;">
+            <input type="text" id="faqInput" placeholder="Type a question..." style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:13px;" onkeydown="if(event.key==='Enter')sendFaqMessage()">
+            <button onclick="sendFaqMessage()" style="padding:10px 14px; background:#1a1a2e; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">Send</button>
+        </div>
+    </div>
+
+    <style>
+        .faq-btn {
+            display:block; width:100%; text-align:left; padding:8px 10px;
+            margin-top:4px; border:1px solid #ddd; border-radius:6px;
+            background:white; cursor:pointer; font-size:12px;
+        }
+        .faq-btn:hover { background:#e8f0fe; border-color:#667eea; }
+    </style>
+
+    <script>
+        function toggleFaqChat() {
+            const chat = document.getElementById("faqChat");
+            chat.style.display = chat.style.display === "none" ? "flex" : "none";
+        }
+
+        const FAQ_ANSWERS = {
+            locked: "🔒 <strong>Why am I locked out?</strong><br>You've been locked because you answered the verification challenge incorrectly 3 times. This triggers an automatic report to your manager. Use the 'Contact Manager' button to explain and request to redo the assignment.",
+            redo: "🔄 <strong>How do I redo an assignment?</strong><br>Click 'Contact Manager' in the lock screen, write a brief explanation, and submit. Your manager will review and unlock your access so you can redo the module from the beginning.",
+            time: "⏱️ <strong>Why does time matter?</strong><br>Each module is expected to take about 30 minutes. If you complete it in less than 5 minutes, the system flags it as suspicious and you may be asked to verify your knowledge with a challenge question.",
+            challenge: "❓ <strong>What is a challenge question?</strong><br>It's a real-scenario question based on the module content. It tests if you actually learned the material. If you answer wrong, you're sent back to redo the lecture. 3 wrong answers = locked out.",
+            contact: "📩 <strong>How do I contact my manager?</strong><br>When locked out, you'll see a message box to write directly to your manager. Type your explanation and click 'Contact Manager'. They'll see your message in the Reports tab and can unlock you."
+        };
+
+        function faqAnswer(key) {
+            const messages = document.getElementById("faqMessages");
+            const answer = FAQ_ANSWERS[key];
+            messages.innerHTML += `<div style="background:#f8f9fa; padding:10px; border-radius:8px; margin-top:8px;">${answer}</div>`;
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function sendFaqMessage() {
+            const input = document.getElementById("faqInput");
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            const messages = document.getElementById("faqMessages");
+            // Show user message
+            messages.innerHTML += `<div style="background:#1a1a2e; color:white; padding:8px 12px; border-radius:8px; margin-top:8px; text-align:right;">${msg}</div>`;
+
+            // Auto-reply based on keywords
+            let reply = "🤖 Thanks for your question! For specific issues, please use the 'Contact Manager' button or check the FAQ options above.";
+            const lower = msg.toLowerCase();
+            if (lower.includes("lock") || lower.includes("blocked")) reply = FAQ_ANSWERS.locked;
+            else if (lower.includes("redo") || lower.includes("again")) reply = FAQ_ANSWERS.redo;
+            else if (lower.includes("time") || lower.includes("fast") || lower.includes("quick")) reply = FAQ_ANSWERS.time;
+            else if (lower.includes("challenge") || lower.includes("question") || lower.includes("quiz")) reply = FAQ_ANSWERS.challenge;
+            else if (lower.includes("contact") || lower.includes("manager") || lower.includes("email") || lower.includes("message")) reply = FAQ_ANSWERS.contact;
+
+            setTimeout(() => {
+                messages.innerHTML += `<div style="background:#f0f4ff; padding:10px; border-radius:8px; margin-top:8px;">${reply}</div>`;
+                messages.scrollTop = messages.scrollHeight;
+            }, 500);
+
+            input.value = "";
+        }
+    </script>
+</body>
+</html>
