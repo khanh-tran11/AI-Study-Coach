@@ -1,0 +1,270 @@
+// Canvas-focused mock lessons with interactive activities
+module.exports = {
+'1': {
+  id:1, title:'Canvas Orientation', description:'Navigate the Canvas Dashboard, find courses, and understand the interface.', estimatedMinutes:45,
+  steps:[
+    { step_id:'1-1', tool_id:'canvas-lms', title:'Navigating the Dashboard', type:'text',
+      content:'When you log into Canvas, the first thing you see is the Dashboard. It displays all your active courses as color-coded cards. You can customize the view (Card View, List View, or Recent Activity). The Global Navigation menu on the left gives you access to Account, Dashboard, Courses, Calendar, Inbox, and Help.',
+      s3LessonText:'Dashboard is the landing page. Global Navigation is the left sidebar. Course cards show enrolled courses.' },
+    { step_id:'1-2', tool_id:'canvas-lms', title:'Key Canvas Areas', type:'flashcard',
+      cards:[
+        { front:'What is the Global Navigation menu?', back:'The left sidebar that provides access to Dashboard, Courses, Calendar, Inbox, and Help from any page.' },
+        { front:'How do you customize your Dashboard view?', back:'Click the options menu (kebab icon) in the top-right of the Dashboard and choose Card View, List View, or Recent Activity.' },
+        { front:'What does the Course Card color mean?', back:'A customizable color nickname to help you quickly identify each course. Right-click the card to change it.' },
+        { front:'Where is the Help menu?', back:'At the bottom of the Global Navigation sidebar. It provides Canvas Guides, report problems, and support contact.' },
+        { front:'How do you access your user settings?', back:'Click "Account" at the top of Global Navigation, then "Settings" to update name, email, notifications, and profile picture.' },
+      ]},
+    { step_id:'1-3', tool_id:'canvas-lms', title:'Dashboard Quiz', type:'quiz',
+      questions:[
+        { id:'q1', question:'After logging in, what is the first page you see in Canvas?', type:'multiple_choice', options:['Dashboard','Inbox','Modules','Settings'], correct:'Dashboard' },
+        { id:'q2', question:'The ________ is the left sidebar that lets you access Dashboard, Courses, Calendar, and Inbox from any page.', type:'fill_blank', correct:'Global Navigation', hint:'It is always visible on the left side of the screen.' },
+        { id:'q3', question:'Match each Dashboard element to its function.', type:'matching', pairs:[
+          { left:'Course Cards', right:'Show your enrolled courses at a glance' },
+          { left:'To-Do List', right:'Displays upcoming assignments and tasks' },
+          { left:'Recent Feedback', right:'Shows recently graded submissions' },
+          { left:'Calendar icon', right:'Opens your course calendar with due dates' },
+        ]},
+      ]},
+  ],
+},
+'2': {
+  id:2, title:'Setting Up Your Course Shell', description:'Configure course settings, set dates, add a syllabus, and prepare your shell.', estimatedMinutes:60,
+  steps:[
+    { step_id:'2-1', tool_id:'canvas-lms', title:'Course Settings Walkthrough', type:'text',
+      content:'To set up your course: Go to Settings from the course navigation. Set the course name, start/end dates, and time zone. Under the Navigation tab, drag items to reorder or hide menu items students see. Under Feature Options, enable new features like New Gradebook or Anonymous Grading. Always publish your course when ready for students.',
+      s3LessonText:'Course Settings: name, dates, navigation reorder, feature options. Publish makes course visible to students.' },
+    { step_id:'2-2', tool_id:'canvas-lms', title:'Course Setup Flashcards', type:'flashcard',
+      cards:[
+        { front:'How do you change course start/end dates?', back:'Go to Settings → Course Details tab → set Start and End date fields → click "Update Course Details".' },
+        { front:'How do you hide a nav link from students?', back:'Settings → Navigation tab → drag the item to the bottom "hidden" list → click Save.' },
+        { front:'What does "Publish" do to a course?', back:'Makes the course visible to students. Before publishing, only instructors can see it.' },
+        { front:'Where do you upload a syllabus?', back:'Click "Syllabus" in course navigation, then "Edit" to add text or upload a file.' },
+        { front:'How do you add a co-instructor?', back:'People → click "+ People" → enter email → select role "Teacher" → click "Add People".' },
+      ]},
+    { step_id:'2-3', tool_id:'canvas-lms', title:'Setup Knowledge Check', type:'quiz',
+      questions:[
+        { id:'q1', question:'To hide the "Chat" link from students, where do you go?', type:'multiple_choice', options:['Settings → Navigation','Modules → Add Item','People → Roles','Files → Upload'], correct:'Settings → Navigation' },
+        { id:'q2', question:'You must ________ your course before students can see it.', type:'fill_blank', correct:'Publish', hint:'This action makes the course live and visible.' },
+        { id:'q3', question:'Match each setup task to where you do it.', type:'matching', pairs:[
+          { left:'Change course dates', right:'Settings → Course Details' },
+          { left:'Reorder navigation', right:'Settings → Navigation' },
+          { left:'Add a co-instructor', right:'People → + People' },
+          { left:'Edit the syllabus', right:'Syllabus → Edit' },
+        ]},
+      ]},
+  ],
+},
+'3': {
+  id:3, title:'Creating & Uploading Content', description:'Create Pages, upload Files, build Modules, and embed media.', estimatedMinutes:50,
+  steps:[
+    { step_id:'3-1', tool_id:'canvas-lms', title:'Content Creation Guide', type:'text',
+      content:'Canvas organizes content through Modules (sequential containers), Pages (rich-text documents), and Files (uploads). To create a Page: Pages → "+ Page" → use the Rich Content Editor for text, images, links, and video. To upload: Files → drag-and-drop. To build a Module: Modules → "+ Module" → name it → add items (pages, assignments, files, links).',
+      s3LessonText:'Modules organize sequentially. Pages use Rich Content Editor. Files stores uploads. Add items to modules via + button.' },
+    { step_id:'3-2', tool_id:'canvas-lms', title:'Content Tools Flashcards', type:'flashcard',
+      cards:[
+        { front:'What is the Rich Content Editor?', back:'The WYSIWYG editor used for Pages, Assignments, Announcements, and Discussions. Supports formatting, images, links, and embedded media.' },
+        { front:'How do you embed a YouTube video?', back:'In the Rich Content Editor, click the Media icon or paste the URL — Canvas auto-embeds it as a player.' },
+        { front:'What is a Module in Canvas?', back:'A container that organizes content sequentially. Students progress through items in order. Can have prerequisites.' },
+        { front:'How to require sequential completion?', back:'Edit Module → check "Students must move through requirements in sequential order."' },
+        { front:'How do you create a new Page?', back:'Pages → "+ Page" → enter title → add content → "Save & Publish".' },
+      ]},
+    { step_id:'3-3', tool_id:'canvas-lms', title:'Content Quiz', type:'quiz',
+      questions:[
+        { id:'q1', question:'Which tool creates rich-text documents with images and video?', type:'multiple_choice', options:['Pages','Files','Outcomes','Rubrics'], correct:'Pages' },
+        { id:'q2', question:'To organize content in sequential order, use ________ in Canvas.', type:'fill_blank', correct:'Modules', hint:'Think of them as chapters that hold content in order.' },
+        { id:'q3', question:'Match each action to the correct location.', type:'matching', pairs:[
+          { left:'Upload a PDF', right:'Files → Upload' },
+          { left:'Write a lesson page', right:'Pages → + Page' },
+          { left:'Organize units in order', right:'Modules → + Module' },
+          { left:'Add a YouTube video', right:'Rich Content Editor → Media icon' },
+        ]},
+      ]},
+  ],
+},
+'4': {
+  id:4, title:'Assignments & Quizzes', description:'Create graded assignments, build quizzes, and configure submissions.', estimatedMinutes:55,
+  steps:[
+    { step_id:'4-1', tool_id:'canvas-lms', title:'Creating Assignments & Quizzes', type:'text',
+      content:'Assignments: Assignments → "+ Assignment" → set name, points, due date, submission type (upload, text, URL). Quizzes: Quizzes → "+ Quiz" → add questions (Multiple Choice, True/False, Essay, Matching, Fill-in-Blank). Set time limits, attempts, and availability dates. Use Question Banks to reuse questions across quizzes.',
+      s3LessonText:'Assignments have submission types, points, due dates. Quizzes have question types, time limits, attempts. Question Banks store reusable questions.' },
+    { step_id:'4-2', tool_id:'canvas-lms', title:'Assignment Flashcards', type:'flashcard',
+      cards:[
+        { front:'What submission types can you set?', back:'Online (text entry, file upload, URL, media), on paper, no submission, or external tool (LTI).' },
+        { front:'How to set a quiz time limit?', back:'Edit quiz → check "Time Limit" → enter minutes. Students see a countdown timer.' },
+        { front:'What is a Question Bank?', back:'A reusable collection of questions that can be linked to multiple quizzes. You can randomly pull from banks.' },
+        { front:'How to allow multiple quiz attempts?', back:'Quiz settings → "Allowed Attempts" → set number or Unlimited. Choose score to keep (highest, latest, average).' },
+        { front:'What is a Rubric?', back:'A scoring guide with criteria and point values attached to an assignment. Students see it before submitting.' },
+      ]},
+    { step_id:'4-3', tool_id:'canvas-lms', title:'Assignments Quiz', type:'quiz',
+      questions:[
+        { id:'q1', question:'Where do you create a new graded assignment?', type:'multiple_choice', options:['Assignments → + Assignment','Pages → + Page','Modules → + Item','Files → Upload'], correct:'Assignments → + Assignment' },
+        { id:'q2', question:'A ________ is a reusable collection of questions for multiple quizzes.', type:'fill_blank', correct:'Question Bank', hint:'A library of questions you can pull from.' },
+        { id:'q3', question:'Match each quiz setting to what it controls.', type:'matching', pairs:[
+          { left:'Time Limit', right:'How long students have to complete' },
+          { left:'Allowed Attempts', right:'How many retakes are permitted' },
+          { left:'Availability Dates', right:'When students can access it' },
+          { left:'Shuffle Answers', right:'Randomizes answer choice order' },
+        ]},
+      ]},
+  ],
+},
+'5': {
+  id:5, title:'Gradebook & Grading', description:'Navigate the Gradebook, use SpeedGrader, post grades, and export.', estimatedMinutes:40,
+  steps:[
+    { step_id:'5-1', tool_id:'canvas-lms', title:'Using the Gradebook', type:'text',
+      content:'The Gradebook is a spreadsheet of students × assignments. Click a cell to enter a score. SpeedGrader (assignment → SpeedGrader) lets you view submissions and annotate. Assignment Groups weight categories (e.g., Homework 30%, Exams 40%). Export: Gradebook → Actions → Export → CSV download.',
+      s3LessonText:'Gradebook is grid view. SpeedGrader for individual grading. Assignment Groups weight categories. Export CSV from Actions.' },
+    { step_id:'5-2', tool_id:'canvas-lms', title:'Gradebook Flashcards', type:'flashcard',
+      cards:[
+        { front:'How to open SpeedGrader?', back:'Click assignment column header → "SpeedGrader", OR open assignment page → "SpeedGrader" in sidebar.' },
+        { front:'How to weight grade categories?', back:'Assignments → three-dot menu → "Assignment Groups Weight" → check "Weight final grade" → set percentages.' },
+        { front:'How to hide grades from students?', back:'Gradebook → assignment column header → "Hide Grades" to conceal, "Post Grades" to reveal.' },
+        { front:'How to excuse a student?', back:'Click grade cell → type "EX" → Enter. The assignment wont count against their total.' },
+        { front:'How to export grades?', back:'Gradebook → "Actions" (or Export) → "Export Current Gradebook View" → CSV downloads.' },
+      ]},
+    { step_id:'5-3', tool_id:'canvas-lms', title:'Gradebook Quiz', type:'quiz',
+      questions:[
+        { id:'q1', question:'Which tool grades submissions one-by-one with annotations?', type:'multiple_choice', options:['SpeedGrader','Gradebook','Rubrics','Outcomes'], correct:'SpeedGrader' },
+        { id:'q2', question:'To export grades as a spreadsheet: Gradebook → ________ → Export.', type:'fill_blank', correct:'Actions', hint:'A menu button in the Gradebook toolbar.' },
+        { id:'q3', question:'Match each grading action to the method.', type:'matching', pairs:[
+          { left:'Excuse a student', right:'Type "EX" in grade cell' },
+          { left:'Weight categories', right:'Assignment Groups → Weight final grade' },
+          { left:'Hide grades', right:'Column header → Hide Grades' },
+          { left:'Download scores', right:'Actions → Export CSV' },
+        ]},
+      ]},
+  ],
+},
+'6': {
+  id:6, title:'Communication Tools', description:'Use Announcements, Inbox, and Discussions to communicate.', estimatedMinutes:35,
+  steps:[
+    { step_id:'6-1', tool_id:'canvas-lms', title:'Communicating in Canvas', type:'text',
+      content:'Three main tools: Announcements (broadcast to all — they get email), Inbox (private messaging), Discussions (threaded forums). Announcements → "+ Announcement" → write → publish. Inbox: Global Navigation → Compose → select course/recipients. Discussions can be graded.',
+      s3LessonText:'Announcements broadcast to all. Inbox is private messaging. Discussions are threaded forums with optional grading.' },
+    { step_id:'6-2', tool_id:'canvas-lms', title:'Communication Flashcards', type:'flashcard',
+      cards:[
+        { front:'How to message one student?', back:'Inbox (Global Navigation) → Compose → select course → type name → write and send.' },
+        { front:'Announcements vs Discussions?', back:'Announcements are one-way broadcasts. Discussions are two-way threaded conversations.' },
+        { front:'How to delay an Announcement?', back:'Check "Delay posting" and set a future date/time. It publishes automatically then.' },
+        { front:'How to make a graded Discussion?', back:'Create Discussion → check "Graded" → set points and due date. Grade via SpeedGrader.' },
+      ]},
+    { step_id:'6-3', tool_id:'canvas-lms', title:'Communication Quiz', type:'quiz',
+      questions:[
+        { id:'q1', question:'Which tool sends a message to ALL students at once?', type:'multiple_choice', options:['Announcements','Inbox','Discussions','Calendar'], correct:'Announcements' },
+        { id:'q2', question:'The Canvas ________ works like email for private messages.', type:'fill_blank', correct:'Inbox', hint:'Accessible from Global Navigation.' },
+        { id:'q3', question:'Match each tool to its best use.', type:'matching', pairs:[
+          { left:'Announcements', right:'Broadcast updates to the whole class' },
+          { left:'Inbox', right:'Private message to one student' },
+          { left:'Discussions', right:'Class-wide conversation with replies' },
+          { left:'Calendar', right:'Show due dates and events' },
+        ]},
+      ]},
+  ],
+},
+'7': {
+  id:7, title:'Accessibility in Canvas', description:'Make content accessible: alt text, captions, headings, Accessibility Checker.', estimatedMinutes:50,
+  steps:[
+    { step_id:'7-1', tool_id:'canvas-lms', title:'Accessibility Best Practices', type:'text',
+      content:'Canvas has a built-in Accessibility Checker in the Rich Content Editor (person icon). It checks: missing alt text, empty headings, low contrast, tables without headers. Always: add alt text to images, use heading hierarchy (H2, H3), provide video captions, use descriptive link text (not "click here").',
+      s3LessonText:'Accessibility Checker in Rich Content Editor. Check alt text, headings, contrast, captions, link text.' },
+    { step_id:'7-2', tool_id:'canvas-lms', title:'Accessibility Flashcards', type:'flashcard',
+      cards:[
+        { front:'Where is the Accessibility Checker?', back:'Rich Content Editor toolbar — the person/accessibility icon. Click to scan for issues.' },
+        { front:'What is alt text?', back:'A description of an image read by screen readers. Makes images accessible to visually impaired users.' },
+        { front:'Why use headings?', back:'Create structure for screen reader navigation. Use H2 for sections, H3 for subsections — never skip levels.' },
+        { front:'How to add video captions?', back:'Upload .srt or .vtt caption file through media settings, or use Canvas Studio auto-captioning.' },
+      ]},
+    { step_id:'7-3', tool_id:'canvas-lms', title:'Accessibility Quiz', type:'quiz',
+      questions:[
+        { id:'q1', question:'Where is the Accessibility Checker?', type:'multiple_choice', options:['Rich Content Editor toolbar','Settings → Accessibility','Account → Preferences','Modules → Options'], correct:'Rich Content Editor toolbar' },
+        { id:'q2', question:'________ is a text description of an image for screen readers.', type:'fill_blank', correct:'Alt text', hint:'Set when inserting or editing an image.' },
+        { id:'q3', question:'Match each practice to its purpose.', type:'matching', pairs:[
+          { left:'Alt text', right:'Describes images for screen readers' },
+          { left:'Heading hierarchy', right:'Creates navigable page structure' },
+          { left:'Video captions', right:'Makes audio accessible to deaf users' },
+          { left:'Descriptive links', right:'Tells users where a link goes' },
+        ]},
+      ]},
+  ],
+},
+'8': {
+  id:8, title:'Student View & Testing', description:'Test your course with Student View before publishing.', estimatedMinutes:30,
+  steps:[
+    { step_id:'8-1', tool_id:'canvas-lms', title:'Testing Your Course', type:'text',
+      content:'Student View: Settings → "Student View" button. As Test Student, submit assignments, take quizzes, see grades. Exit via "Leave Student View" pink bar. Delete test data from People or Settings → "Reset Test Student." Always test before publishing.',
+      s3LessonText:'Student View in Settings. Test Student submits work and sees grades. Reset from People or Settings.' },
+    { step_id:'8-2', tool_id:'canvas-lms', title:'Testing Flashcards', type:'flashcard',
+      cards:[
+        { front:'How to enter Student View?', back:'Settings → "Student View" button at the bottom. You become Test Student.' },
+        { front:'Can you submit work in Student View?', back:'Yes! Submit assignments, take quizzes, view grades just like a real student.' },
+        { front:'How to exit Student View?', back:'Click "Leave Student View" in the pink bar at the bottom.' },
+        { front:'How to clear test data?', back:'People → Test Student → Remove, or Settings → "Reset Test Student."' },
+      ]},
+    { step_id:'8-3', tool_id:'canvas-lms', title:'Testing Quiz', type:'quiz',
+      questions:[
+        { id:'q1', question:'Where do you access Student View?', type:'multiple_choice', options:['Settings → Student View','Account → View as Student','Dashboard → Test','Modules → Preview'], correct:'Settings → Student View' },
+        { id:'q2', question:'In Student View, you become "________ Student."', type:'fill_blank', correct:'Test', hint:'A special fake student account Canvas creates.' },
+        { id:'q3', question:'Match each action to when you should do it.', type:'matching', pairs:[
+          { left:'Enter Student View', right:'Before publishing to verify experience' },
+          { left:'Submit test assignment', right:'Confirm submission workflow works' },
+          { left:'Check quiz time limits', right:'Ensure adequate time for students' },
+          { left:'Reset Test Student', right:'After testing to clear dummy data' },
+        ]},
+      ]},
+  ],
+},
+'9': {
+  id:9, title:'Canvas Admin & Support', description:'Know when to contact LMS admin and how to find help.', estimatedMinutes:45,
+  steps:[
+    { step_id:'9-1', tool_id:'canvas-lms', title:'Getting Help', type:'text',
+      content:'Help menu (Global Navigation bottom): Canvas Guides (documentation), Report a Problem, contact institution. Contact LMS Admin for: course creation, enrollment, LTI tools, account issues. Instructure offers 24/7 phone support. Canvas Community forums for peer help.',
+      s3LessonText:'Help in Global Navigation. Canvas Guides for docs. LMS Admin for institutional issues. 24/7 Instructure support.' },
+    { step_id:'9-2', tool_id:'canvas-lms', title:'Support Flashcards', type:'flashcard',
+      cards:[
+        { front:'Where are Canvas Guides?', back:'Help menu → "Search the Canvas Guides" — searchable documentation for every feature.' },
+        { front:'When to contact LMS Admin?', back:'Course creation, enrollment issues, LTI tools (Turnitin, Zoom), account lockouts, cross-listing.' },
+        { front:'How to report a bug?', back:'Help → "Report a Problem" → describe issue → submit. Canvas support investigates.' },
+        { front:'What is Canvas Community?', back:'Online forum where instructors share tips, ask questions, discuss features. Access from Help menu.' },
+      ]},
+    { step_id:'9-3', tool_id:'canvas-lms', title:'Support Quiz', type:'quiz',
+      questions:[
+        { id:'q1', question:'Where is the Help menu?', type:'multiple_choice', options:['Bottom of Global Navigation','Top of Dashboard','Inside Settings','Under Account'], correct:'Bottom of Global Navigation' },
+        { id:'q2', question:'Searchable documentation for Canvas features is called Canvas ________.', type:'fill_blank', correct:'Guides', hint:'Accessed from the Help menu.' },
+        { id:'q3', question:'Match each issue to who to contact.', type:'matching', pairs:[
+          { left:'Cant login', right:'LMS Admin' },
+          { left:'Bug in quiz grading', right:'Report a Problem' },
+          { left:'Need Zoom added', right:'LMS Admin' },
+          { left:'How to use a feature', right:'Canvas Guides' },
+        ]},
+      ]},
+  ],
+},
+'10': {
+  id:10, title:'Capstone & Certification', description:'Final assessment covering all modules. Pass to earn certification.', estimatedMinutes:60,
+  steps:[
+    { step_id:'10-1', tool_id:'canvas-lms', title:'Final Review', type:'text',
+      content:'You have learned: Dashboard navigation, course setup, content creation, assignments & quizzes, gradebook, communication, accessibility, student testing, and support. This final assessment covers all modules. Complete it to earn your Hartnell College Canvas Certification!',
+      s3LessonText:'Final module covers all topics. Passing earns certification.' },
+    { step_id:'10-2', tool_id:'canvas-lms', title:'Comprehensive Review', type:'flashcard',
+      cards:[
+        { front:'Three Dashboard views?', back:'Card View, List View, and Recent Activity — changeable from the options menu.' },
+        { front:'How to make a Module sequential?', back:'Edit Module → check "Students must move through requirements in sequential order."' },
+        { front:'Name 3 quiz question types.', back:'Multiple Choice, True/False, Fill-in-Blank, Essay, Matching, Numerical Answer, Formula, File Upload.' },
+        { front:'What does EX mean in Gradebook?', back:'Student is excused — assignment wont count in their grade calculation.' },
+        { front:'How to make a graded Discussion?', back:'Create Discussion → check "Graded" → set points and due date.' },
+        { front:'What to do before publishing?', back:'Use Student View to verify content, due dates, submissions, quizzes, and navigation.' },
+      ]},
+    { step_id:'10-3', tool_id:'canvas-lms', title:'Final Assessment', type:'quiz',
+      questions:[
+        { id:'q1', question:'Which feature lets you see your course as a student?', type:'multiple_choice', options:['Student View','Preview Mode','Test Account','Observer Role'], correct:'Student View' },
+        { id:'q2', question:'To weight grades by category, configure ________ Groups.', type:'fill_blank', correct:'Assignment', hint:'Category containers in the Assignments page.' },
+        { id:'q3', question:'Match each tool to its purpose.', type:'matching', pairs:[
+          { left:'SpeedGrader', right:'Grade submissions with annotations' },
+          { left:'Modules', right:'Organize content sequentially' },
+          { left:'Announcements', right:'Broadcast to all students' },
+          { left:'Accessibility Checker', right:'Scan for accessibility issues' },
+        ]},
+      ]},
+  ],
+},
+}; }
