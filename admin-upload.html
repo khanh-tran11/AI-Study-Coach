@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Trainer — Admin Portal</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --canvas-red:  #E66000;
+      --canvas-dark: #2D3B45;
+      --canvas-mid:  #394B58;
+      --accent:      #0770A3;
+      --green:       #00AC18;
+      --yellow:      #C7A000;
+      --border:      #D6D6D6;
+      --bg:          #F0F4F8;
+      --white:       #FFFFFF;
+      --text:        #2D3B45;
+      --text-light:  #5B6770;
+      --radius:      8px;
+      --shadow:      0 2px 10px rgba(0,0,0,0.09);
+    }
+    body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+    /* ── Nav ── */
+    nav { background:var(--canvas-dark); height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; }
+    .nav-brand { display:flex; align-items:center; gap:10px; color:#fff; font-weight:700; font-size:1rem; }
+    .nav-dot { width:10px; height:10px; background:var(--canvas-red); border-radius:50%; }
+    .nav-links { display:flex; align-items:center; gap:6px; }
+    .nav-link { color:#C8D0D5; text-decoration:none; font-size:0.85rem; padding:6px 12px; border-radius:6px; transition:background 0.15s; }
+    .nav-link:hover { background:rgba(255,255,255,0.08); color:#fff; }
+    .nav-link.active { background:rgba(255,255,255,0.12); color:#fff; }
+    .nav-user { display:flex; align-items:center; gap:10px; color:#C8D0D5; font-size:0.85rem; }
+    .nav-avatar { width:32px; height:32px; background:var(--canvas-red); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:0.8rem; }
+    .btn-logout { background:transparent; border:1px solid rgba(255,255,255,0.25); color:#C8D0D5; padding:5px 12px; border-radius:6px; cursor:pointer; font-size:0.82rem; transition:all 0.15s; }
+    .btn-logout:hover { background:rgba(255,255,255,0.1); color:#fff; }
+
+    /* ── Layout ── */
+    .page { max-width:1200px; margin:0 auto; padding:32px 24px; display:grid; grid-template-columns:1fr 380px; gap:28px; align-items:start; }
+    .page-header { grid-column:1/-1; margin-bottom:4px; }
+    .page-header h1 { font-size:1.5rem; font-weight:800; color:var(--canvas-dark); }
+    .page-header p { color:var(--text-light); font-size:0.9rem; margin-top:4px; }
+
+    /* ── Card ── */
+    .card { background:var(--white); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
+    .card-header { padding:18px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .card-header h2 { font-size:1rem; font-weight:700; }
+    .card-header .badge { background:var(--accent); color:#fff; font-size:0.72rem; font-weight:700; padding:3px 10px; border-radius:20px; }
+    .card-body { padding:22px; }
+
+    /* ── Drop Zone ── */
+    .dropzone {
+      border:2.5px dashed var(--border); border-radius:10px; padding:40px 24px;
+      text-align:center; cursor:pointer; transition:all 0.2s; position:relative; background:#FAFBFC;
+    }
+    .dropzone:hover, .dropzone.dragover { border-color:var(--accent); background:#EBF5FB; }
+    .dropzone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .dropzone .dz-icon { font-size:2.4rem; margin-bottom:12px; display:block; }
+    .dropzone h3 { font-size:1rem; font-weight:700; color:var(--canvas-dark); margin-bottom:6px; }
+    .dropzone p { font-size:0.83rem; color:var(--text-light); }
+    .dropzone .file-types { margin-top:12px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
+    .file-type-tag { background:#EEF2F5; color:var(--text-light); font-size:0.72rem; font-weight:600; padding:3px 9px; border-radius:20px; }
+
+    /* ── Upload queue ── */
+    .upload-queue { margin-top:20px; display:flex; flex-direction:column; gap:10px; }
+    .upload-item { display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--border); border-radius:8px; background:var(--white); }
+    .upload-item .file-icon { font-size:1.4rem; flex-shrink:0; }
+    .upload-item .file-info { flex:1; min-width:0; }
+    .upload-item .file-name { font-weight:600; font-size:0.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .upload-item .file-meta { font-size:0.76rem; color:var(--text-light); margin-top:2px; }
+    .upload-item .file-prog { margin-top:6px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+    .upload-item .file-prog-fill { height:100%; background:var(--accent); border-radius:2px; transition:width 0.4s; }
+    .upload-item .remove-btn { background:none; border:none; color:#B0BEC5; cursor:pointer; font-size:1.1rem; padding:4px; border-radius:4px; transition:color 0.15s; flex-shrink:0; }
+    .upload-item .remove-btn:hover { color:#D32F2F; }
+    .status-chip { font-size:0.72rem; font-weight:700; padding:3px 8px; border-radius:20px; white-space:nowrap; }
+    .chip-ready    { background:#E6F9EA; color:#007A12; }
+    .chip-parsing  { background:#FFF8E1; color:#8A6C00; }
+    .chip-done     { background:#E3F2FD; color:#0D47A1; }
+    .chip-error    { background:#FFEBEE; color:#C62828; }
+
+    /* ── Generate button ── */
+    .btn-generate { width:100%; padding:13px; margin-top:20px; background:var(--canvas-red); color:#fff; font-size:0.95rem; font-weight:700; border:none; border-radius:8px; cursor:pointer; transition:background 0.18s; display:flex; align-items:center; justify-content:center; gap:8px; }
+    .btn-generate:hover { background:#c85500; }
+    .btn-generate:disabled { background:#B0BEC5; cursor:not-allowed; }
+    .btn-generate .spin { display:inline-block; animation:spin 0.9s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* ── Module list ── */
+    .module-list { display:flex; flex-direction:column; gap:10px; }
+    .module-item { border:1px solid var(--border); border-radius:8px; overflow:hidden; transition:box-shadow 0.15s; }
+    .module-item:hover { box-shadow:0 2px 8px rgba(0,0,0,0.09); }
+    .module-item-header { display:flex; align-items:center; gap:12px; padding:13px 16px; cursor:pointer; background:var(--white); }
+    .module-num { width:28px; height:28px; border-radius:50%; background:var(--accent); color:#fff; font-size:0.78rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .module-title { flex:1; font-weight:700; font-size:0.9rem; }
+    .module-meta  { font-size:0.76rem; color:var(--text-light); }
+    .module-chevron { color:var(--text-light); font-size:0.85rem; transition:transform 0.2s; }
+    .module-item.open .module-chevron { transform:rotate(90deg); }
+    .module-body { display:none; padding:0 16px 14px 56px; font-size:0.85rem; color:var(--text-light); line-height:1.7; border-top:1px solid #F0F0F0; padding-top:12px; }
+    .module-item.open .module-body { display:block; }
+    .module-body ul { padding-left:16px; margin-top:6px; }
+    .module-body ul li { margin-bottom:4px; }
+    .module-source { margin-top:8px; font-size:0.74rem; color:var(--accent); }
+
+    /* ── Sidebar stats ── */
+    .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+    .stat-box { background:var(--bg); border-radius:8px; padding:14px 16px; text-align:center; }
+    .stat-box .stat-n { font-size:1.6rem; font-weight:800; color:var(--canvas-dark); }
+    .stat-box .stat-l { font-size:0.74rem; color:var(--text-light); text-transform:uppercase; letter-spacing:0.06em; font-weight:600; margin-top:2px; }
+
+    /* ── Published toggle ── */
+    .publish-row { display:flex; align-items:center; justify-content:space-between; padding:14px 22px; border-top:1px solid var(--border); }
+    .publish-row span { font-size:0.88rem; font-weight:600; color:var(--text); }
+    .toggle { position:relative; display:inline-block; width:44px; height:24px; }
+    .toggle input { opacity:0; width:0; height:0; }
+    .slider { position:absolute; inset:0; background:var(--border); border-radius:24px; cursor:pointer; transition:background 0.2s; }
+    .slider::before { content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:transform 0.2s; }
+    .toggle input:checked + .slider { background:var(--green); }
+    .toggle input:checked + .slider::before { transform:translateX(20px); }
+
+    /* ── Action buttons ── */
+    .btn-outline { width:100%; padding:10px; margin-top:10px; background:transparent; border:1.5px solid var(--accent); color:var(--accent); font-size:0.88rem; font-weight:700; border-radius:8px; cursor:pointer; transition:all 0.15s; }
+    .btn-outline:hover { background:var(--accent); color:#fff; }
+    .btn-solid { width:100%; padding:10px; margin-top:10px; background:var(--accent); border:none; color:#fff; font-size:0.88rem; font-weight:700; border-radius:8px; cursor:pointer; transition:background 0.15s; }
+    .btn-solid:hover { background:#055f8a; }
+
+    /* ── Toast ── */
+    .toast { position:fixed; bottom:28px; right:28px; background:var(--canvas-dark); color:#fff; padding:12px 20px; border-radius:8px; font-size:0.88rem; font-weight:600; box-shadow:0 4px 16px rgba(0,0,0,0.2); transform:translateY(80px); opacity:0; transition:all 0.3s; z-index:999; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.success { border-left:4px solid var(--green); }
+    .toast.info    { border-left:4px solid var(--accent); }
+
+    @media(max-width:900px) { .page { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand"><div class="nav-dot"></div> AI Trainer &nbsp;|&nbsp; Admin Portal</div>
+  <div class="nav-links">
+    <a href="admin-upload.html" class="nav-link active">📂 Content &amp; Modules</a>
+    <a href="admin-dashboard.html" class="nav-link">📊 Applicant Dashboard</a>
+  </div>
+  <div class="nav-user">
+    <span id="nav-name"></span>
+    <div class="nav-avatar" id="nav-initials"></div>
+    <button class="btn-logout" onclick="Auth.logout()">Sign Out</button>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <h1>Content Upload &amp; Module Builder</h1>
+    <p>Upload your Canvas training materials — documents, videos, and guides. The AI will parse them and generate structured learning modules automatically.</p>
+  </div>
+
+  <!-- LEFT: Upload + Modules -->
+  <div style="display:flex;flex-direction:column;gap:24px;">
+
+    <!-- Upload card -->
+    <div class="card">
+      <div class="card-header">
+        <h2>📂 Upload Training Materials</h2>
+        <span class="badge" id="file-count-badge">0 files</span>
+      </div>
+      <div class="card-body">
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="file-input" multiple accept=".pdf,.docx,.doc,.txt,.mp4,.mov,.pptx,.ppt" />
+          <span class="dz-icon">☁️</span>
+          <h3>Drag &amp; drop files here</h3>
+          <p>or click to browse from your computer</p>
+          <div class="file-types">
+            <span class="file-type-tag">PDF</span>
+            <span class="file-type-tag">DOCX</span>
+            <span class="file-type-tag">TXT</span>
+            <span class="file-type-tag">PPT/PPTX</span>
+            <span class="file-type-tag">MP4 / MOV</span>
+          </div>
+        </div>
+        <div class="upload-queue" id="upload-queue"></div>
+        <button class="btn-generate" id="btn-generate" disabled onclick="generateModules()">
+          <span>✨</span> Generate Modules from Uploaded Content
+        </button>
+      </div>
+    </div>
+
+    <!-- Generated modules card -->
+    <div class="card" id="modules-card" style="display:none;">
+      <div class="card-header">
+        <h2>🗂️ Generated Modules</h2>
+        <span class="badge" id="module-count-badge">0 modules</span>
+      </div>
+      <div class="card-body">
+        <div class="module-list" id="module-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Sidebar -->
+  <div style="display:flex;flex-direction:column;gap:24px;">
+    <div class="card">
+      <div class="card-header"><h2>📋 Training Overview</h2></div>
+      <div class="card-body">
+        <div class="stat-grid">
+          <div class="stat-box"><div class="stat-n" id="s-files">0</div><div class="stat-l">Files Uploaded</div></div>
+          <div class="stat-box"><div class="stat-n" id="s-modules">0</div><div class="stat-l">Modules</div></div>
+          <div class="stat-box"><div class="stat-n" id="s-faculty">12</div><div class="stat-l">Faculty</div></div>
+          <div class="stat-box"><div class="stat-n" id="s-completed">3</div><div class="stat-l">Completed</div></div>
+        </div>
+        <button class="btn-solid" onclick="window.location.href='admin-dashboard.html'">View Applicant Dashboard →</button>
+        <button class="btn-outline" onclick="showToast('Curriculum exported as PDF!','success')">Export Curriculum PDF</button>
+      </div>
+      <div class="publish-row">
+        <span>Publish modules to faculty</span>
+        <label class="toggle">
+          <input type="checkbox" id="publish-toggle" onchange="onPublishToggle(this)" />
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>💡 Tips</h2></div>
+      <div class="card-body" style="font-size:0.85rem;color:var(--text-light);line-height:1.8;">
+        <ul style="padding-left:16px;">
+          <li>Upload Word/PDF how-to guides for step-by-step modules.</li>
+          <li>MP4 transcripts are extracted automatically.</li>
+          <li>Each uploaded file maps to one or more modules.</li>
+          <li>Reorder modules by dragging after generation.</li>
+          <li>Toggle "Publish" to make modules live for faculty.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="auth.js"></script>
+<script>
+  // ── Auth guard ──
+  const session = Auth.requireRole("admin");
+  if (session) {
+    document.getElementById("nav-name").textContent = session.name;
+    document.getElementById("nav-initials").textContent = session.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+  }
+
+  // ── AI-generated module templates (simulated from uploaded content) ──
+  const MODULE_TEMPLATES = [
+    { title:"Canvas Orientation",        duration:"45 min", topics:["Navigating the Canvas dashboard","Understanding course shells","Locating student roster and settings"],         source:"canvas-orientation-guide.pdf" },
+    { title:"Setting Up Your Shell",     duration:"60 min", topics:["Creating a new course shell","Configuring course details and visibility","Setting enrollment and access dates"],  source:"shell-setup-howto.docx" },
+    { title:"Course Content Upload",     duration:"50 min", topics:["Uploading files and media","Creating pages and modules","Embedding videos and external links"],               source:"content-upload-video.mp4" },
+    { title:"Assignments & Quizzes",     duration:"55 min", topics:["Creating graded assignments","Building quiz banks","Setting due dates and availability windows"],              source:"assignments-guide.pdf" },
+    { title:"Gradebook & Exports",       duration:"40 min", topics:["Reading the Gradebook view","Exporting grades to CSV","Posting and muting grades"],                           source:"gradebook-export.docx" },
+    { title:"Communication Tools",       duration:"35 min", topics:["Sending Canvas Inbox messages","Setting up Announcements","Using Discussion boards effectively"],              source:"comms-guide.pdf" },
+    { title:"Accessibility Standards",   duration:"50 min", topics:["Alt text for images","Captioning video content","Using the Accessibility Checker in Canvas"],                 source:"accessibility-policy.pdf" },
+    { title:"Student View & Testing",    duration:"30 min", topics:["Switching to Student View","Testing submission flows","Checking grade visibility from student perspective"],   source:"student-view-walkthrough.mp4" },
+    { title:"LMS Admin Intro",           duration:"45 min", topics:["Contacting LMS admin support","Escalation paths: Instructure 24/7","Scheduling a training session"],          source:"lms-admin-info.docx" },
+    { title:"Capstone & Certification",  duration:"60 min", topics:["Reviewing all completed modules","Final knowledge check quiz","Receiving your onboarding certificate"],        source:"capstone-assessment.pdf" },
+  ];
+
+  let uploadedFiles = [];
+  let modulesGenerated = false;
+
+  // ── File icon helper ──
+  function fileIcon(name) {
+    const ext = name.split(".").pop().toLowerCase();
+    const map = { pdf:"📄", docx:"📝", doc:"📝", txt:"📃", mp4:"🎬", mov:"🎬", pptx:"📊", ppt:"📊" };
+    return map[ext] || "📁";
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + " KB";
+    return (bytes/(1024*1024)).toFixed(1) + " MB";
+  }
+
+  // ── Drag & drop ──
+  const dz = document.getElementById("dropzone");
+  dz.addEventListener("dragover",  e => { e.preventDefault(); dz.classList.add("dragover"); });
+  dz.addEventListener("dragleave", ()  => dz.classList.remove("dragover"));
+  dz.addEventListener("drop", e => {
+    e.preventDefault(); dz.classList.remove("dragover");
+    addFiles([...e.dataTransfer.files]);
+  });
+  document.getElementById("file-input").addEventListener("change", e => {
+    addFiles([...e.target.files]);
+    e.target.value = "";
+  });
+
+  function addFiles(files) {
+    files.forEach(f => {
+      if (uploadedFiles.find(u => u.name === f.name)) return; // no dupes
+      uploadedFiles.push({ name:f.name, size:f.size, status:"ready", progress:0 });
+    });
+    renderQueue();
+    simulateUploads();
+  }
+
+  function removeFile(name) {
+    uploadedFiles = uploadedFiles.filter(f => f.name !== name);
+    renderQueue();
+  }
+
+  function renderQueue() {
+    const q = document.getElementById("upload-queue");
+    const count = uploadedFiles.length;
+    document.getElementById("file-count-badge").textContent = count + " file" + (count !== 1 ? "s" : "");
+    document.getElementById("s-files").textContent = count;
+    document.getElementById("btn-generate").disabled = count === 0;
+
+    if (count === 0) { q.innerHTML = ""; return; }
+
+    q.innerHTML = uploadedFiles.map(f => {
+      const chipClass = { ready:"chip-ready", parsing:"chip-parsing", done:"chip-done", error:"chip-error" }[f.status];
+      const chipLabel = { ready:"Ready", parsing:"Parsing…", done:"Indexed", error:"Error" }[f.status];
+      return `
+        <div class="upload-item" id="item-${CSS.escape(f.name)}">
+          <span class="file-icon">${fileIcon(f.name)}</span>
+          <div class="file-info">
+            <div class="file-name">${f.name}</div>
+            <div class="file-meta">${formatSize(f.size)}</div>
+            ${f.status==="parsing" ? `<div class="file-prog"><div class="file-prog-fill" style="width:${f.progress}%"></div></div>` : ""}
+          </div>
+          <span class="status-chip ${chipClass}">${chipLabel}</span>
+          <button class="remove-btn" onclick="removeFile('${f.name.replace(/'/g,"\\'")}')" title="Remove">✕</button>
+        </div>`;
+    }).join("");
+  }
+
+  function simulateUploads() {
+    uploadedFiles.forEach(f => {
+      if (f.status !== "ready") return;
+      f.status = "parsing"; f.progress = 0;
+      renderQueue();
+      const iv = setInterval(() => {
+        f.progress = Math.min(f.progress + Math.random() * 25, 100);
+        if (f.progress >= 100) { f.status = "done"; clearInterval(iv); }
+        renderQueue();
+      }, 300);
+    });
+  }
+
+  // ── Generate modules ──
+  function generateModules() {
+    const btn = document.getElementById("btn-generate");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin">⏳</span> AI is building modules…';
+
+    setTimeout(() => {
+      btn.innerHTML = '✅ Modules Generated!';
+      renderModules();
+      document.getElementById("modules-card").style.display = "block";
+      document.getElementById("s-modules").textContent = MODULE_TEMPLATES.length;
+      document.getElementById("module-count-badge").textContent = MODULE_TEMPLATES.length + " modules";
+      modulesGenerated = true;
+      document.getElementById("modules-card").scrollIntoView({ behavior:"smooth", block:"start" });
+      showToast("10 modules generated from your content!", "success");
+    }, 2200);
+  }
+
+  function renderModules() {
+    const list = document.getElementById("module-list");
+    list.innerHTML = MODULE_TEMPLATES.map((m, i) => `
+      <div class="module-item" id="mod-${i}">
+        <div class="module-item-header" onclick="toggleModule(${i})">
+          <div class="module-num">${i+1}</div>
+          <div class="module-title">${m.title}</div>
+          <div class="module-meta">⏱ ${m.duration}</div>
+          <span class="module-chevron">▶</span>
+        </div>
+        <div class="module-body">
+          <strong>Topics covered:</strong>
+          <ul>${m.topics.map(t=>`<li>${t}</li>`).join("")}</ul>
+          <div class="module-source">📎 Source: ${m.source}</div>
+        </div>
+      </div>`).join("");
+  }
+
+  function toggleModule(i) {
+    document.getElementById("mod-"+i).classList.toggle("open");
+  }
+
+  function onPublishToggle(el) {
+    if (el.checked) {
+      if (!modulesGenerated) { el.checked = false; showToast("Generate modules before publishing.", "info"); return; }
+      showToast("Modules published — faculty can now access their training path!", "success");
+    } else {
+      showToast("Modules unpublished.", "info");
+    }
+  }
+
+  // ── Toast ──
+  let toastTimer;
+  function showToast(msg, type="info") {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 3500);
+  }
+</script>
+</body>
+</html>

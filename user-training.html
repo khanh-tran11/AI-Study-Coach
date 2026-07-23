@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Trainer — Faculty Training</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --canvas-red:  #E66000;
+      --canvas-dark: #2D3B45;
+      --canvas-mid:  #394B58;
+      --accent:      #0770A3;
+      --green:       #00AC18;
+      --yellow:      #C7A000;
+      --border:      #D6D6D6;
+      --bg:          #F0F4F8;
+      --white:       #FFFFFF;
+      --text:        #2D3B45;
+      --text-light:  #5B6770;
+      --radius:      8px;
+      --shadow:      0 2px 10px rgba(0,0,0,0.09);
+    }
+    body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+
+    /* ── Nav ── */
+    nav { background:var(--canvas-dark); height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; flex-shrink:0; }
+    .nav-brand { display:flex; align-items:center; gap:10px; color:#fff; font-weight:700; font-size:1rem; }
+    .nav-dot { width:10px; height:10px; background:var(--canvas-red); border-radius:50%; }
+    .nav-user { display:flex; align-items:center; gap:10px; color:#C8D0D5; font-size:0.85rem; }
+    .nav-avatar { width:32px; height:32px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:0.8rem; }
+    .btn-logout { background:transparent; border:1px solid rgba(255,255,255,0.25); color:#C8D0D5; padding:5px 12px; border-radius:6px; cursor:pointer; font-size:0.82rem; transition:all 0.15s; }
+    .btn-logout:hover { background:rgba(255,255,255,0.1); color:#fff; }
+
+    /* ── Layout: sidebar + main ── */
+    .app-body { display:flex; flex:1; min-height:0; }
+
+    /* ── Sidebar ── */
+    .sidebar { width:300px; background:var(--canvas-mid); flex-shrink:0; display:flex; flex-direction:column; overflow-y:auto; }
+    .sidebar-header { padding:20px 20px 14px; border-bottom:1px solid rgba(255,255,255,0.08); }
+    .sidebar-header h2 { color:#fff; font-size:0.92rem; font-weight:700; margin-bottom:8px; }
+    .overall-bar { height:6px; background:rgba(255,255,255,0.15); border-radius:3px; overflow:hidden; }
+    .overall-fill { height:100%; background:var(--green); border-radius:3px; transition:width 0.5s; }
+    .overall-label { display:flex; justify-content:space-between; margin-top:6px; font-size:0.75rem; color:rgba(255,255,255,0.55); }
+
+    .module-nav { list-style:none; padding:12px 0; flex:1; }
+    .module-nav li { padding:0; }
+    .mod-btn {
+      width:100%; text-align:left; background:transparent; border:none; cursor:pointer;
+      padding:11px 20px; display:flex; align-items:center; gap:12px;
+      color:rgba(255,255,255,0.7); font-size:0.86rem; font-weight:500;
+      transition:background 0.15s, color 0.15s; border-left:3px solid transparent;
+    }
+    .mod-btn:hover { background:rgba(255,255,255,0.06); color:#fff; }
+    .mod-btn.active { background:rgba(255,255,255,0.1); color:#fff; border-left-color:var(--canvas-red); }
+    .mod-btn.locked { opacity:0.4; cursor:not-allowed; }
+    .mod-btn .mod-icon { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:800; flex-shrink:0; }
+    .icon-done    { background:var(--green); color:#fff; }
+    .icon-active  { background:var(--canvas-red); color:#fff; }
+    .icon-locked  { background:rgba(255,255,255,0.15); color:rgba(255,255,255,0.5); }
+    .mod-btn .mod-label { flex:1; }
+    .mod-btn .mod-dur { font-size:0.74rem; color:rgba(255,255,255,0.4); }
+
+    /* ── Main content ── */
+    .main { flex:1; overflow-y:auto; padding:32px 36px; }
+
+    /* ── Module header ── */
+    .mod-header { margin-bottom:24px; }
+    .mod-header .breadcrumb { font-size:0.8rem; color:var(--text-light); margin-bottom:8px; }
+    .mod-header h1 { font-size:1.5rem; font-weight:800; color:var(--canvas-dark); }
+    .mod-header .meta-row { display:flex; align-items:center; gap:16px; margin-top:8px; flex-wrap:wrap; }
+    .meta-chip { display:flex; align-items:center; gap:5px; font-size:0.8rem; color:var(--text-light); }
+
+    /* ── Step cards ── */
+    .steps { display:flex; flex-direction:column; gap:16px; margin-bottom:28px; }
+    .step-card { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; border-left:4px solid var(--border); transition:border-color 0.2s; }
+    .step-card.done   { border-left-color:var(--green); }
+    .step-card.active { border-left-color:var(--canvas-red); }
+    .step-card-header { display:flex; align-items:center; gap:12px; padding:14px 18px; cursor:pointer; }
+    .step-num { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:800; flex-shrink:0; }
+    .step-num.done   { background:#E6F9EA; color:var(--green); }
+    .step-num.active { background:#FDECDF; color:var(--canvas-red); }
+    .step-num.todo   { background:#EEF2F5; color:var(--text-light); }
+    .step-title { flex:1; font-weight:700; font-size:0.92rem; }
+    .step-status { font-size:0.76rem; font-weight:700; padding:3px 9px; border-radius:20px; }
+    .ss-done   { background:#E6F9EA; color:#007A12; }
+    .ss-active { background:#FDECDF; color:var(--canvas-red); }
+    .ss-todo   { background:#EEF2F5; color:var(--text-light); }
+    .step-chevron { color:var(--text-light); font-size:0.8rem; transition:transform 0.2s; }
+    .step-card.open .step-chevron { transform:rotate(90deg); }
+    .step-body { display:none; padding:0 18px 16px 60px; font-size:0.88rem; color:var(--text); line-height:1.75; }
+    .step-card.open .step-body { display:block; }
+    .step-body p { margin-bottom:10px; }
+    .step-body .try-it { background:#F0F6FA; border:1px solid #C5DCF0; border-radius:6px; padding:12px 14px; margin-top:10px; font-size:0.83rem; color:var(--accent); }
+    .step-body .try-it strong { display:block; margin-bottom:4px; }
+
+    /* ── AI Chat bubble ── */
+    .ai-hint { background:linear-gradient(135deg,#EBF5FB,#F5EFF9); border:1px solid #C5DCF0; border-radius:10px; padding:16px 18px; margin-bottom:24px; display:flex; gap:12px; align-items:flex-start; }
+    .ai-hint .ai-face { font-size:1.6rem; flex-shrink:0; }
+    .ai-hint .ai-text { font-size:0.87rem; line-height:1.7; color:var(--text); }
+    .ai-hint .ai-text strong { color:var(--accent); }
+
+    /* ── Bottom actions ── */
+    .actions { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding-top:8px; border-top:1px solid var(--border); }
+    .btn-prev, .btn-next { padding:11px 24px; border-radius:8px; font-size:0.92rem; font-weight:700; cursor:pointer; transition:all 0.18s; border:none; }
+    .btn-prev { background:transparent; border:1.5px solid var(--border); color:var(--text-light); }
+    .btn-prev:hover { border-color:var(--accent); color:var(--accent); }
+    .btn-next { background:var(--canvas-red); color:#fff; }
+    .btn-next:hover { background:#c85500; }
+    .btn-next:disabled { background:#B0BEC5; cursor:not-allowed; }
+    .btn-complete { background:var(--green); color:#fff; padding:11px 28px; border:none; border-radius:8px; font-size:0.92rem; font-weight:700; cursor:pointer; transition:background 0.18s; }
+    .btn-complete:hover { background:#008f14; }
+
+    /* ── Help bar ── */
+    .help-bar { background:var(--white); border-top:1px solid var(--border); padding:14px 36px; display:flex; align-items:center; gap:12px; flex-shrink:0; font-size:0.83rem; color:var(--text-light); }
+    .help-bar strong { color:var(--text); }
+    .help-links { display:flex; gap:8px; margin-left:auto; }
+    .help-link { padding:6px 14px; border-radius:6px; background:var(--bg); border:1px solid var(--border); color:var(--accent); font-size:0.8rem; font-weight:600; cursor:pointer; text-decoration:none; transition:background 0.15s; }
+    .help-link:hover { background:#EBF5FB; }
+
+    /* ── Locked overlay ── */
+    .locked-overlay { text-align:center; padding:80px 24px; }
+    .locked-overlay .lock-icon { font-size:3rem; margin-bottom:16px; }
+    .locked-overlay h2 { font-size:1.2rem; font-weight:800; color:var(--canvas-dark); margin-bottom:8px; }
+    .locked-overlay p { color:var(--text-light); font-size:0.9rem; max-width:360px; margin:0 auto; }
+
+    /* ── Completed screen ── */
+    .complete-screen { text-align:center; padding:60px 24px; }
+    .complete-screen .trophy { font-size:4rem; margin-bottom:16px; }
+    .complete-screen h2 { font-size:1.5rem; font-weight:800; color:var(--canvas-dark); margin-bottom:8px; }
+    .complete-screen p { color:var(--text-light); font-size:0.92rem; max-width:400px; margin:0 auto 24px; line-height:1.7; }
+    .cert-badge { display:inline-block; background:linear-gradient(135deg,#0770A3,#2D3B45); color:#fff; padding:16px 32px; border-radius:12px; font-weight:800; font-size:1rem; letter-spacing:0.04em; }
+
+    /* ── Toast ── */
+    .toast { position:fixed; bottom:28px; right:28px; background:var(--canvas-dark); color:#fff; padding:12px 20px; border-radius:8px; font-size:0.88rem; font-weight:600; box-shadow:0 4px 16px rgba(0,0,0,0.2); transform:translateY(80px); opacity:0; transition:all 0.3s; z-index:999; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.success { border-left:4px solid var(--green); }
+    .toast.info    { border-left:4px solid var(--accent); }
+
+    @media(max-width:768px) { .sidebar { width:100%; max-height:220px; } .app-body { flex-direction:column; } .main { padding:20px; } }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-brand"><div class="nav-dot"></div> AI Trainer &nbsp;|&nbsp; Faculty Training</div>
+  <div class="nav-user">
+    <span id="nav-name"></span>
+    <div class="nav-avatar" id="nav-initials"></div>
+    <button class="btn-logout" onclick="Auth.logout()">Sign Out</button>
+  </div>
+</nav>
+
+<div class="app-body">
+  <!-- Sidebar: module list -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>Onboarding Path</h2>
+      <div class="overall-bar"><div class="overall-fill" id="overall-fill" style="width:0%"></div></div>
+      <div class="overall-label">
+        <span id="progress-label">0 of 10 complete</span>
+        <span id="progress-pct">0%</span>
+      </div>
+    </div>
+    <ul class="module-nav" id="module-nav"></ul>
+  </aside>
+
+  <!-- Main panel -->
+  <main class="main" id="main-panel"></main>
+</div>
+
+<!-- Help bar -->
+<div class="help-bar">
+  <strong>Need help?</strong> Stuck on a step? Reach out to support.
+  <div class="help-links">
+    <a class="help-link" onclick="showToast('Opening Canvas Inbox…','info')">📨 Canvas Inbox</a>
+    <a class="help-link" onclick="showToast('Connecting to LMS Admin…','info')">🛠 LMS Admin</a>
+    <a class="help-link" onclick="showToast('Opening Instructure 24/7 support…','info')">🆘 Instructure Support</a>
+    <a class="help-link" onclick="showToast('Opening scheduling calendar…','info')">📅 Schedule Training</a>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="auth.js"></script>
+<script>
+const session = Auth.requireRole("faculty");
+if (session) {
+  document.getElementById("nav-name").textContent = session.name;
+  document.getElementById("nav-initials").textContent = session.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+}
+
+// ── Module definitions ──
+const MODULES = [
+  { title:"Canvas Orientation",       duration:"45 min", hint:"Welcome! Let's get you comfortable with Canvas before diving into course setup.",
+    steps:[
+      { title:"Navigating the Dashboard",    body:"<p>Log in to Canvas at <strong>your-college.instructure.com</strong>. Your Dashboard shows all active courses. Use the left-side Global Navigation to access Courses, Inbox, Calendar, and Help.</p><p>Spend a few minutes clicking through each icon so the layout feels familiar.</p>", tryit:"Click every icon in the Global Navigation menu and note what each section contains." },
+      { title:"Understanding Course Shells", body:"<p>A <strong>course shell</strong> is your empty Canvas course container. It holds your content, assignments, gradebook, and student roster. Think of it as the house before you add furniture.</p>", tryit:"Open one of your assigned course shells and identify: the Modules tab, the Grades tab, and the People tab." },
+      { title:"Locating Student Roster",     body:"<p>Go to <strong>People</strong> in the course navigation. You'll see everyone enrolled — students and other instructors. You can email any student directly from this view.</p>", tryit:"Find the People section and see if you can identify which students are active vs. inactive." },
+    ]
+  },
+  { title:"Setting Up Your Shell",    duration:"60 min", hint:"Time to build out your course shell. This is where your students will live for the semester.",
+    steps:[
+      { title:"Configuring Course Details",  body:"<p>Go to <strong>Settings → Course Details</strong>. Set your course name, time zone, and default view. Choose <em>Modules</em> as the default home for a clean, sequential experience.</p>", tryit:"Update your course nickname and verify the time zone matches your campus location." },
+      { title:"Setting Visibility & Dates",  body:"<p>Under <strong>Settings</strong>, scroll to <em>Course Availability</em>. Set the start and end dates so students can only access the course during the active term. Keep it unpublished until content is ready.</p>", tryit:"Set course availability dates for the upcoming term, then verify they're saved." },
+      { title:"Configuring Enrollment",      body:"<p>Enrollment is usually managed by your SIS (Colleague). But you can manually add co-instructors or TAs under <strong>People → Add People</strong>. Use their college email address.</p>", tryit:"Practice adding a test user as a TA, then remove them." },
+    ]
+  },
+  { title:"Course Content Upload",    duration:"50 min", hint:"Let's get your materials into Canvas. Docs, videos, and pages all live here.",
+    steps:[
+      { title:"Uploading Files & Media",     body:"<p>Go to <strong>Files</strong> in the left navigation. Drag-and-drop documents, PDFs, or images directly into the folder structure. Organize by week or topic for easy retrieval.</p>", tryit:"Upload one syllabus PDF and one supplemental reading into separate folders." },
+      { title:"Creating Pages",              body:"<p>Pages let you write rich content directly in Canvas — text, images, embedded video, links. Go to <strong>Pages → + Page</strong>. Use the Rich Content Editor (RCE) toolbar to format.</p>", tryit:"Create a 'Welcome' page with a brief intro paragraph and a link to your syllabus file." },
+      { title:"Embedding Video",             body:"<p>Record a short welcome video and upload it to <strong>Media Gallery</strong> or embed a YouTube link via <em>Insert → External Tool → Media</em> in the RCE. Captions are auto-generated for YouTube videos.</p>", tryit:"Embed a short YouTube video onto your Welcome page and preview it in Student View." },
+    ]
+  },
+  { title:"Assignments & Quizzes",    duration:"55 min", hint:"Assessments are the backbone of your course. Here's how to build them right.",
+    steps:[
+      { title:"Creating an Assignment",      body:"<p>Go to <strong>Assignments → + Assignment</strong>. Set the title, instructions, point value, submission type (online text, file upload, etc.), and due date. Save as draft first to review before publishing.</p>", tryit:"Create a practice assignment called 'Week 1 Reflection' worth 10 points, due at end of week 1." },
+      { title:"Building a Quiz",             body:"<p>Go to <strong>Quizzes → + Quiz</strong>. Choose <em>Classic Quizzes</em> or <em>New Quizzes</em>. Add questions (multiple choice, true/false, short answer). Set a time limit and number of attempts.</p>", tryit:"Build a 3-question multiple-choice quiz on your course topic with one correct answer each." },
+      { title:"Setting Availability Windows",body:"<p>Every assignment and quiz has <strong>Available From</strong> and <strong>Until</strong> date fields — different from the Due Date. Students can submit late until the <em>Until</em> date (at a penalty, if configured).</p>", tryit:"Set your quiz to open Monday at 8 AM and close Sunday at midnight." },
+    ]
+  },
+  { title:"Gradebook & Exports",      duration:"40 min", hint:"Track grades and report them — Canvas makes it straightforward once you know where to look.",
+    steps:[
+      { title:"Reading the Gradebook",       body:"<p>Open <strong>Grades</strong>. Each row is a student, each column an assignment. Click any cell to see submission details, leave comments, or override a score. Use the <em>View</em> menu to filter by student group or grading period.</p>", tryit:"Open a student row and practice entering a manual grade override." },
+      { title:"Posting & Muting Grades",     body:"<p>By default, grades post immediately. To hide them until all are graded, click the column header → <em>Grade Posting Policy → Manually Post</em>. Don't forget to post when you're done — students can't see muted grades.</p>", tryit:"Set one assignment to manual posting, enter a few grades, then post them all at once." },
+      { title:"Exporting to CSV",            body:"<p>Click the <strong>Export</strong> button (top-right of Gradebook) → <em>Export Current Gradebook View</em>. The CSV downloads to your computer. Import it into Colleague or share with your department chair.</p>", tryit:"Export the gradebook and open the CSV in Excel to verify all columns are present." },
+    ]
+  },
+  { title:"Communication Tools",      duration:"35 min", hint:"Stay connected with your students without leaving Canvas.",
+    steps:[
+      { title:"Canvas Inbox",                body:"<p><strong>Inbox</strong> is Canvas's internal messaging system. Use it to message individual students, a whole course, or specific groups. Messages are kept inside Canvas — not your personal email.</p>", tryit:"Send a test message to yourself via Inbox and confirm you receive it." },
+      { title:"Announcements",               body:"<p>Go to <strong>Announcements → + Announcement</strong>. Write your message, attach files if needed, and choose to delay posting. Students receive email notifications automatically if subscribed.</p>", tryit:"Create a 'Welcome to the Course' announcement with a delay-post set to the first day of class." },
+      { title:"Discussion Boards",           body:"<p>Go to <strong>Discussions → + Discussion</strong>. Choose <em>Graded</em> to tie it to the Gradebook or <em>Ungraded</em> for informal interaction. Enable <em>Require initial post</em> so students must contribute before seeing peers' responses.</p>", tryit:"Create an introductions discussion board and configure it as graded, worth 5 points." },
+    ]
+  },
+  { title:"Accessibility Standards",  duration:"50 min", hint:"Accessible content isn't optional — it benefits every student.",
+    steps:[
+      { title:"Alt Text for Images",         body:"<p>Every image in Canvas needs descriptive <strong>alt text</strong>. In the RCE, after inserting an image, click it → <em>Image Options</em> → enter a meaningful description. Decorative images should be marked as decorative.</p>", tryit:"Upload an image to a page and add descriptive alt text, then mark a second image as decorative." },
+      { title:"Captioning Video Content",    body:"<p>All video content must be captioned. Canvas Media Gallery auto-generates captions — review and correct them before publishing. For YouTube, enable auto-captions and edit in YouTube Studio.</p>", tryit:"Open a media gallery video, generate captions, and correct at least one error." },
+      { title:"Accessibility Checker",       body:"<p>The RCE has a built-in <strong>Accessibility Checker</strong> (wheelchair icon in the toolbar). Run it on every page before publishing — it flags missing alt text, poor color contrast, and heading structure issues.</p>", tryit:"Run the Accessibility Checker on your Welcome page and resolve any flagged issues." },
+    ]
+  },
+  { title:"Student View & Testing",   duration:"30 min", hint:"Always test your course as a student before going live. What you see as an instructor isn't what students see.",
+    steps:[
+      { title:"Switching to Student View",   body:"<p>Click <strong>Student View</strong> (bottom of the left sidebar). Canvas creates a test student account. Browse your course as they would — check what's visible, what's locked, and whether links work.</p>", tryit:"Enter Student View and navigate to your Week 1 module. Confirm all items load correctly." },
+      { title:"Testing Submission Flows",    body:"<p>In Student View, submit a test assignment and a quiz. Verify that the submission confirmation screen appears and grades are visible after submission (if set to auto-post).</p>", tryit:"Submit a test file to your practice assignment and verify the grade appears in your test student's Grades view." },
+      { title:"Checking Grade Visibility",   body:"<p>While still in Student View, open the Grades tab. Confirm students can see scores for posted assignments but not for muted/unposted ones. Exit Student View via <em>Leave Student View</em> button.</p>", tryit:"Verify one manually-posted assignment is hidden and one auto-posted assignment is visible from Student View." },
+    ]
+  },
+  { title:"LMS Admin Intro",          duration:"45 min", hint:"You're not alone — the LMS admin team is here to support you. Know your escalation paths.",
+    steps:[
+      { title:"Contacting LMS Admin Support",body:"<p>Your LMS Administrator handles Shell creation, enrollment issues, and advanced Canvas configuration. Reach them via the internal Help Desk ticket system or the Canvas Inbox at <strong>lmsadmin@college.edu</strong>.</p>", tryit:"Locate the Help Desk ticketing link in your college portal and bookmark it." },
+      { title:"Instructure 24/7 Support",    body:"<p>Canvas offers 24/7 direct support via the <strong>Help menu</strong> (question-mark icon, bottom of Global Navigation). Options include phone, chat, and an extensive community forum at community.canvaslms.com.</p>", tryit:"Open the Help menu in Canvas and note the phone number and chat option for future reference." },
+      { title:"Scheduling a Training Session",body:"<p>The Distance Education office offers one-on-one training sessions. Use the scheduling link in the help bar below, or email <strong>de-training@college.edu</strong> to book a session with an instructional designer.</p>", tryit:"Visit the scheduling calendar and check availability for a 30-minute training this week." },
+    ]
+  },
+  { title:"Capstone & Certification",  duration:"60 min", hint:"You're almost there! Complete the final assessment to earn your onboarding certificate.",
+    steps:[
+      { title:"Module Review",               body:"<p>Take a few minutes to revisit any module you'd like to review. Use the sidebar to jump back to earlier content. Your progress is saved automatically.</p>", tryit:"Revisit one earlier module and re-open one step you'd like to review." },
+      { title:"Final Knowledge Check",       body:"<p>Complete the <strong>Onboarding Assessment</strong> quiz in Canvas (your LMS admin will enroll you). It covers all 10 modules. A score of 80% or higher is required to pass.</p>", tryit:"Open Canvas, locate the 'Faculty Onboarding Assessment' quiz, and complete it." },
+      { title:"Receive Your Certificate",    body:"<p>Once you pass, your completion is recorded and your Canvas shell access is activated. You'll receive an automated email with your <strong>digital onboarding certificate</strong> within one business day.</p>", tryit:"Check your college email for your certificate and forward it to your department chair as required." },
+    ]
+  },
+];
+
+// ── State ──
+// Demo: faculty has completed first 3 modules already
+let completedModules = JSON.parse(sessionStorage.getItem("faculty_completed") || "[0,1,2]");
+let currentModIdx = completedModules.length < MODULES.length ? completedModules.length : 0;
+let openSteps = {};
+
+function saveProgress() {
+  sessionStorage.setItem("faculty_completed", JSON.stringify(completedModules));
+}
+
+// ── Sidebar ──
+function renderSidebar() {
+  const pct = Math.round((completedModules.length / MODULES.length) * 100);
+  document.getElementById("overall-fill").style.width = pct + "%";
+  document.getElementById("progress-label").textContent = completedModules.length + " of " + MODULES.length + " complete";
+  document.getElementById("progress-pct").textContent = pct + "%";
+
+  const nav = document.getElementById("module-nav");
+  nav.innerHTML = MODULES.map((m, i) => {
+    const done   = completedModules.includes(i);
+    const active = i === currentModIdx;
+    const locked = !done && i > (completedModules.length);
+    const iconCls = done ? "icon-done" : active ? "icon-active" : "icon-locked";
+    const iconTxt = done ? "✓" : i + 1;
+    const btnCls  = `mod-btn${active ? " active" : ""}${locked ? " locked" : ""}`;
+    return `<li>
+      <button class="${btnCls}" onclick="${locked ? "showToast('Complete the previous module to unlock this one.','info')" : "gotoModule("+i+")"}" ${locked?"title='Complete previous modules first'":""}>
+        <div class="mod-icon ${iconCls}">${iconTxt}</div>
+        <span class="mod-label">${m.title}</span>
+        <span class="mod-dur">${m.duration}</span>
+      </button>
+    </li>`;
+  }).join("");
+}
+
+// ── Main panel ──
+function gotoModule(idx) {
+  currentModIdx = idx;
+  openSteps = {};
+  renderSidebar();
+  renderMain();
+  document.getElementById("main-panel").scrollTop = 0;
+}
+
+function renderMain() {
+  const panel = document.getElementById("main-panel");
+
+  // All done
+  if (completedModules.length === MODULES.length) {
+    panel.innerHTML = `
+      <div class="complete-screen">
+        <div class="trophy">🏆</div>
+        <h2>Onboarding Complete!</h2>
+        <p>Congratulations — you've completed all 10 Canvas training modules. Your certificate is on its way, and your course shell is now active.</p>
+        <div class="cert-badge">🎓 Canvas Faculty Certified</div>
+      </div>`;
+    return;
+  }
+
+  const mod = MODULES[currentModIdx];
+  const isDone = completedModules.includes(currentModIdx);
+  const isLocked = !isDone && currentModIdx > completedModules.length;
+
+  if (isLocked) {
+    panel.innerHTML = `
+      <div class="locked-overlay">
+        <div class="lock-icon">🔒</div>
+        <h2>Module Locked</h2>
+        <p>Complete <strong>${MODULES[currentModIdx - 1].title}</strong> first to unlock this module.</p>
+      </div>`;
+    return;
+  }
+
+  const stepsHtml = mod.steps.map((s, si) => {
+    const done   = isDone || si < (openSteps.done || 0);
+    const active = !isDone && si === (openSteps.done || 0);
+    const todo   = !done && !active;
+    const isOpen = openSteps[si];
+    const numCls = done ? "done" : active ? "active" : "todo";
+    const ssCls  = done ? "ss-done" : active ? "ss-active" : "ss-todo";
+    const ssLbl  = done ? "Done" : active ? "Current" : "Upcoming";
+    return `
+      <div class="step-card ${done?"done":active?"active":""} ${isOpen?"open":""}" id="step-${si}">
+        <div class="step-card-header" onclick="toggleStep(${si})">
+          <div class="step-num ${numCls}">${done?"✓":si+1}</div>
+          <div class="step-title">${s.title}</div>
+          <span class="step-status ${ssCls}">${ssLbl}</span>
+          <span class="step-chevron">▶</span>
+        </div>
+        <div class="step-body">
+          ${s.body}
+          <div class="try-it"><strong>✋ Try it yourself:</strong>${s.tryit}</div>
+        </div>
+      </div>`;
+  }).join("");
+
+  const prevDisabled = currentModIdx === 0;
+  const allStepsDone = isDone;
+
+  panel.innerHTML = `
+    <div class="mod-header">
+      <div class="breadcrumb">Training Path &rsaquo; Module ${currentModIdx + 1} of ${MODULES.length}</div>
+      <h1>${mod.title}</h1>
+      <div class="meta-row">
+        <span class="meta-chip">⏱ ${mod.duration}</span>
+        <span class="meta-chip">${mod.steps.length} steps</span>
+        ${isDone ? '<span class="meta-chip" style="color:var(--green);">✅ Completed</span>' : ""}
+      </div>
+    </div>
+
+    <div class="ai-hint">
+      <div class="ai-face">🤖</div>
+      <div class="ai-text"><strong>AI Trainer says:</strong> ${mod.hint} Expand each step below, read through it, and complete the hands-on task. When you're done with all steps, click <em>Mark as Complete</em> to unlock the next module.</div>
+    </div>
+
+    <div class="steps">${stepsHtml}</div>
+
+    <div class="actions">
+      <button class="btn-prev" onclick="gotoModule(${currentModIdx - 1})" ${prevDisabled?"disabled":""}>← Previous</button>
+      ${isDone
+        ? `<button class="btn-next" onclick="gotoModule(${Math.min(currentModIdx+1, MODULES.length-1)})">Next Module →</button>`
+        : `<button class="btn-complete" onclick="completeModule(${currentModIdx})">✅ Mark as Complete</button>`
+      }
+    </div>`;
+
+  // Auto-open first non-done step
+  if (!isDone) toggleStep(openSteps.done || 0);
+}
+
+function toggleStep(si) {
+  const card = document.getElementById("step-" + si);
+  if (!card) return;
+  card.classList.toggle("open");
+}
+
+function completeModule(idx) {
+  if (!completedModules.includes(idx)) {
+    completedModules.push(idx);
+    saveProgress();
+  }
+  showToast("Module " + (idx+1) + " complete! 🎉", "success");
+  // Advance to next module if available
+  if (idx + 1 < MODULES.length) {
+    setTimeout(() => gotoModule(idx + 1), 800);
+  } else {
+    setTimeout(() => { renderSidebar(); renderMain(); }, 800);
+  }
+}
+
+// ── Toast ──
+let toastTimer;
+function showToast(msg, type="info") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 3500);
+}
+
+// ── Init ──
+renderSidebar();
+renderMain();
+</script>
+</body>
+</html>

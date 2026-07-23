@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Trainer — Sign In</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --canvas-red:   #E66000;
+      --canvas-dark:  #2D3B45;
+      --canvas-mid:   #394B58;
+      --accent-blue:  #0770A3;
+      --green:        #00AC18;
+      --border:       #D6D6D6;
+      --text:         #2D3B45;
+      --text-light:   #5B6770;
+      --bg:           #F0F4F8;
+      --white:        #FFFFFF;
+      --radius:       10px;
+      --shadow:       0 4px 24px rgba(0,0,0,0.10);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: var(--canvas-dark);
+      height: 56px;
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+      gap: 10px;
+    }
+    .topbar-dot { width: 10px; height: 10px; background: var(--canvas-red); border-radius: 50%; }
+    .topbar-title { color: #fff; font-weight: 700; font-size: 1rem; letter-spacing: 0.01em; }
+
+    /* ── Hero split ── */
+    .hero {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: calc(100vh - 56px);
+    }
+
+    .hero-left {
+      background: linear-gradient(145deg, var(--canvas-dark) 0%, #1a2830 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 64px 56px;
+      color: white;
+    }
+
+    .hero-left .tag {
+      display: inline-block;
+      background: var(--canvas-red);
+      color: white;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+
+    .hero-left h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+
+    .hero-left h1 span { color: var(--canvas-red); }
+
+    .hero-left p {
+      font-size: 1rem;
+      color: #A8BCC9;
+      line-height: 1.7;
+      max-width: 420px;
+      margin-bottom: 40px;
+    }
+
+    .feature-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.9rem;
+      color: #C8D8E2;
+    }
+    .feature-list li .icon {
+      width: 32px; height: 32px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 1rem;
+    }
+
+    /* ── Right / form side ── */
+    .hero-right {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 32px;
+      background: var(--bg);
+    }
+
+    .login-card {
+      background: var(--white);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 44px 40px;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .login-card h2 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--canvas-dark);
+      margin-bottom: 4px;
+    }
+
+    .login-card .subtitle {
+      font-size: 0.88rem;
+      color: var(--text-light);
+      margin-bottom: 28px;
+    }
+
+    /* ── Role tabs ── */
+    .role-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .role-tab {
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.18s;
+      background: transparent;
+    }
+
+    .role-tab:hover { border-color: var(--accent-blue); }
+
+    .role-tab.active {
+      border-color: var(--accent-blue);
+      background: #EBF5FB;
+    }
+
+    .role-tab .role-icon { font-size: 1.6rem; display: block; margin-bottom: 6px; }
+    .role-tab .role-name { font-weight: 700; font-size: 0.88rem; color: var(--canvas-dark); }
+    .role-tab .role-desc { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
+
+    .role-tab.active .role-name { color: var(--accent-blue); }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 18px; }
+
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.92rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+      background: var(--white);
+    }
+
+    .form-group input:focus { border-color: var(--accent-blue); }
+
+    .form-group input.error { border-color: #D32F2F; }
+
+    .hint-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+    }
+
+    .demo-hint {
+      font-size: 0.76rem;
+      color: var(--text-light);
+      background: #F3F6F8;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      line-height: 1.5;
+    }
+
+    .demo-hint strong { color: var(--canvas-dark); }
+
+    .btn-login {
+      width: 100%;
+      padding: 13px;
+      background: var(--accent-blue);
+      color: white;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.1s;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-login:hover  { background: #055f8a; }
+    .btn-login:active { transform: scale(0.98); }
+    .btn-login:disabled { background: #B0BEC5; cursor: not-allowed; }
+
+    .error-msg {
+      margin-top: 12px;
+      background: #FFEBEE;
+      border: 1px solid #FFCDD2;
+      border-radius: 6px;
+      padding: 9px 12px;
+      font-size: 0.83rem;
+      color: #C62828;
+      display: none;
+    }
+
+    .divider {
+      text-align: center;
+      margin: 20px 0 0;
+      font-size: 0.78rem;
+      color: var(--text-light);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 800px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero-left { padding: 48px 28px; }
+      .login-card { padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-dot"></div>
+  <span class="topbar-title">AI Trainer — Distance Education Faculty Onboarding</span>
+</div>
+
+<div class="hero">
+  <!-- Left panel -->
+  <div class="hero-left">
+    <span class="tag">Canvas · AI-Powered</span>
+    <h1>Smarter onboarding<br>starts <span>here.</span></h1>
+    <p>A guided, conversational training agent that walks new distance education faculty through Canvas — step by step, module by module.</p>
+    <ul class="feature-list">
+      <li><div class="icon">📂</div> Upload training docs &amp; videos — AI builds the modules</li>
+      <li><div class="icon">🗺️</div> Sequential, stage-gated learning paths</li>
+      <li><div class="icon">📊</div> Live progress tracking for every faculty member</li>
+      <li><div class="icon">💬</div> In-context help &amp; escalation to live support</li>
+    </ul>
+  </div>
+
+  <!-- Right panel / login -->
+  <div class="hero-right">
+    <div class="login-card">
+      <h2>Sign in</h2>
+      <p class="subtitle">Choose your role to continue.</p>
+
+      <!-- Role selector -->
+      <div class="role-tabs">
+        <button class="role-tab active" id="tab-admin" onclick="selectRole('admin')">
+          <span class="role-icon">🔑</span>
+          <div class="role-name">Admin / Owner</div>
+          <div class="role-desc">Upload content, manage modules</div>
+        </button>
+        <button class="role-tab" id="tab-faculty" onclick="selectRole('faculty')">
+          <span class="role-icon">🎓</span>
+          <div class="role-name">Faculty</div>
+          <div class="role-desc">Access your training path</div>
+        </button>
+      </div>
+
+      <!-- Demo hint (swaps per role) -->
+      <div class="hint-row">
+        <div class="demo-hint" id="demo-hint">
+          Demo — <strong>admin@college.edu</strong> / <strong>admin123</strong>
+        </div>
+      </div>
+
+      <!-- Login form -->
+      <form id="login-form" onsubmit="handleLogin(event)" novalidate>
+        <div class="form-group">
+          <label for="email">Email address</label>
+          <input type="email" id="email" placeholder="you@college.edu" autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required />
+        </div>
+
+        <button class="btn-login" type="submit" id="btn-submit">Sign In</button>
+        <div class="error-msg" id="error-msg"></div>
+      </form>
+
+      <div class="divider">Faculty demo password: <strong>faculty123</strong></div>
+    </div>
+  </div>
+</div>
+
+<script src="auth.js"></script>
+<script>
+  // If already logged in, redirect immediately
+  const existing = Auth.getSession();
+  if (existing) {
+    window.location.href = existing.role === "admin" ? "admin-upload.html" : "user-training.html";
+  }
+
+  let selectedRole = "admin";
+
+  const HINTS = {
+    admin:   "Demo — <strong>admin@college.edu</strong> / <strong>admin123</strong>",
+    faculty: "Demo — <strong>m.santos@college.edu</strong> / <strong>faculty123</strong>"
+  };
+
+  function selectRole(role) {
+    selectedRole = role;
+    document.getElementById("tab-admin").classList.toggle("active", role === "admin");
+    document.getElementById("tab-faculty").classList.toggle("active", role === "faculty");
+    document.getElementById("demo-hint").innerHTML = HINTS[role];
+    // Pre-fill email hint
+    document.getElementById("email").value = role === "admin" ? "admin@college.edu" : "m.santos@college.edu";
+    document.getElementById("password").value = "";
+    hideError();
+  }
+
+  function handleLogin(e) {
+    e.preventDefault();
+    const email    = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const btn      = document.getElementById("btn-submit");
+
+    if (!email || !password) { showError("Please enter your email and password."); return; }
+
+    btn.disabled = true;
+    btn.textContent = "Signing in…";
+
+    // Simulate a brief async delay (swap for real fetch() when backend is ready)
+    setTimeout(() => {
+      const result = Auth.login(email, password);
+      if (!result.success) {
+        showError(result.message);
+        btn.disabled = false;
+        btn.textContent = "Sign In";
+        return;
+      }
+      // Role mismatch warning (soft — still allows login)
+      const user = result.user;
+      window.location.href = user.role === "admin" ? "admin-upload.html" : "user-training.html";
+    }, 600);
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("error-msg");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+
+  function hideError() {
+    document.getElementById("error-msg").style.display = "none";
+  }
+
+  // Pre-fill on load
+  selectRole("admin");
+</script>
+</body>
+</html>
