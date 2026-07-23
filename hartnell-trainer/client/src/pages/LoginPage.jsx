@@ -14,14 +14,14 @@ export default function LoginPage() {
   const { login }    = useAuth();
   const navigate     = useNavigate();
   const [role,    setRole]    = useState('admin');
-  const [email,   setEmail]   = useState('admin@hartnell.edu');
+  const [email,   setEmail]   = useState('');
   const [password,setPassword]= useState('');
   const [error,   setError]   = useState('');
   const [loading, setLoading] = useState(false);
 
   function pickRole(r) {
     setRole(r);
-    setEmail(r === 'admin' ? 'admin@hartnell.edu' : 'm.santos@hartnell.edu');
+    setEmail('');
     setPassword('');
     setError('');
   }
@@ -106,14 +106,14 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} noValidate>
             <div className={styles.field}>
-              <label htmlFor="email">Email address</label>
+              <label htmlFor="email">📧 Email ID</label>
               <input id="email" type="email" value={email}
-                onChange={e => setEmail(e.target.value)} placeholder="you@hartnell.edu" required />
+                onChange={e => setEmail(e.target.value)} placeholder="Enter your email" required />
             </div>
             <div className={styles.field}>
-              <label htmlFor="password">Password</label>
+              <label htmlFor="password">🔒 Password</label>
               <input id="password" type="password" value={password}
-                onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
+                onChange={e => setPassword(e.target.value)} placeholder="Enter your password" required />
             </div>
 
             {error && <div className={styles.errorBox}>{error}</div>}

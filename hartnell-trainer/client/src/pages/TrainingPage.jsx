@@ -33,6 +33,7 @@ export default function TrainingPage() {
   const [lesson,      setLesson]      = useState(null);
   const [assets,      setAssets]      = useState({ videos: [], images: [] });
   const [stepIdx,     setStepIdx]     = useState(0);
+  const [stepDone,    setStepDone]    = useState(false);
   const [loading,     setLoading]     = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showProgress,setShowProgress]= useState(false);
@@ -41,6 +42,7 @@ export default function TrainingPage() {
   useEffect(() => {
     setLoading(true);
     setStepIdx(0);
+    setStepDone(false);
     setLesson(null);
     fetchModule(moduleIdx + 1)
       .then(r => { setLesson(r.data.lesson); setAssets(r.data.assets); })
@@ -61,9 +63,14 @@ export default function TrainingPage() {
 
   function completeStep() {
     const step = lesson?.steps?.[stepIdx];
+    // Block if interactive step not completed
+    if (step && (step.type === 'flashcard' || step.type === 'quiz') && !stepDone) {
+      return;
+    }
     if (step) postProgress(step.step_id, 'completed');
     if (stepIdx + 1 < (lesson?.steps?.length || 0)) {
       setStepIdx(s => s + 1);
+      setStepDone(false);
     } else {
       // Complete module
       if (!completed.includes(moduleIdx)) {
@@ -239,7 +246,7 @@ export default function TrainingPage() {
                   )}
 
                   {currentStep?.type === 'flashcard' && (
-                    <Flashcard cards={currentStep.cards ?? []} />
+                    <Flashcard cards={currentStep.cards ?? []} onComplete={() => setStepDone(true)} />
                   )}
 
                   {currentStep?.type === 'quiz' && (
@@ -249,7 +256,7 @@ export default function TrainingPage() {
                           return (
                             <div key={qi} className={styles.widgetBlock}>
                               <h3 className={styles.widgetLabel}>Matching</h3>
-                              <Matching pairs={q.pairs} />
+                              <Matching pairs={q.pairs} onComplete={() => setStepDone(true)} />
                             </div>
                           );
                         }
@@ -258,7 +265,7 @@ export default function TrainingPage() {
                             <h3 className={styles.widgetLabel}>
                               {q.type === 'fill_blank' ? 'Fill in the Blank' : 'Multiple Choice'}
                             </h3>
-                            <Quiz questions={[q]} />
+                            <Quiz questions={[q]} onComplete={() => setStepDone(true)} />
                           </div>
                         );
                       })}
@@ -275,7 +282,12 @@ export default function TrainingPage() {
                   >
                     ← Back
                   </button>
-                  <button className={styles.btnContinue} onClick={completeStep}>
+                  <button
+                    className={styles.btnContinue}
+                    onClick={completeStep}
+                    disabled={(currentStep?.type === 'flashcard' || currentStep?.type === 'quiz') && !stepDone}
+                    title={(currentStep?.type === 'flashcard' || currentStep?.type === 'quiz') && !stepDone ? 'Complete all questions before continuing' : undefined}
+                  >
                     {stepIdx + 1 === lesson.steps.length
                       ? completed.includes(moduleIdx) ? 'Next Module →' : '✅ Complete Module'
                       : 'Continue →'}

@@ -118,74 +118,9 @@ router.get('/:moduleId', async (req, res) => {
 });
 
 // ── Mock lesson schema (used when S3 is not configured) ──
+const mockLessonsData = require('../mock-lessons');
 function getMockLesson(moduleId) {
-  const titles = {
-    '1': 'Canvas Orientation',       '2': 'Setting Up Your Shell',
-    '3': 'Course Content Upload',    '4': 'Assignments & Quizzes',
-    '5': 'Gradebook & Exports',      '6': 'Communication Tools',
-    '7': 'Accessibility Standards',  '8': 'Student View & Testing',
-    '9': 'LMS Admin Intro',          '10': 'Capstone & Certification',
-  };
-  return {
-    id: moduleId,
-    title: titles[moduleId] || `Module ${moduleId}`,
-    description: 'Learn the essentials of Canvas for distance education at Hartnell College.',
-    estimatedMinutes: 45,
-    steps: [
-      {
-        step_id: `${moduleId}-1`,
-        tool_id: 'canvas-lms',
-        title: 'Introduction',
-        type: 'text',
-        content: 'Welcome to this Canvas training module. Read through each section carefully.',
-        s3LessonText: 'This is the lesson context passed to the AI assistant.',
-      },
-      {
-        step_id: `${moduleId}-2`,
-        tool_id: 'canvas-lms',
-        title: 'Flashcard Review',
-        type: 'flashcard',
-        cards: [
-          { front: 'What is a Canvas Shell?', back: 'A course container in Canvas that holds your content, assignments, gradebook, and students.' },
-          { front: 'Where do students see their grades?', back: 'In the Grades section of the course navigation menu.' },
-          { front: 'What does "publishing" a course mean?', back: 'Making it visible and accessible to enrolled students.' },
-        ],
-      },
-      {
-        step_id: `${moduleId}-3`,
-        tool_id: 'canvas-lms',
-        title: 'Knowledge Check',
-        type: 'quiz',
-        questions: [
-          {
-            id: 'q1',
-            question: 'Which section of Canvas shows all active courses on login?',
-            type: 'multiple_choice',
-            options: ['Dashboard', 'Inbox', 'Files', 'Settings'],
-            correct: 'Dashboard',
-          },
-          {
-            id: 'q2',
-            question: 'The ________ is the internal messaging system in Canvas.',
-            type: 'fill_blank',
-            correct: 'Inbox',
-            hint: 'Think of it like an email system inside Canvas.',
-          },
-          {
-            id: 'q3',
-            question: 'Match each Canvas tool to its purpose.',
-            type: 'matching',
-            pairs: [
-              { left: 'Gradebook',    right: 'Track and post student scores' },
-              { left: 'Modules',      right: 'Organize course content sequentially' },
-              { left: 'Announcements',right: 'Broadcast messages to all students' },
-              { left: 'People',       right: 'Manage student enrollment' },
-            ],
-          },
-        ],
-      },
-    ],
-  };
+  return mockLessonsData[String(moduleId)] || mockLessonsData['1'];
 }
 
 module.exports = router;
