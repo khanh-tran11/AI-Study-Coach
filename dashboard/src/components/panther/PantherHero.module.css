@@ -6,10 +6,10 @@
 
 .hero {
   width: 100%;
-  /* Richer multi-stop gradient for depth */
+  /* Hartnell College colors — burgundy & gold */
   background:
-    radial-gradient(ellipse 80% 60% at 50% 30%, rgba(37, 99, 235, 0.3) 0%, transparent 70%),
-    linear-gradient(160deg, #0f1b3d 0%, var(--color-accent) 40%, #1d4ed8 70%, #1e3a6e 100%);
+    radial-gradient(ellipse 80% 60% at 50% 30%, rgba(200, 164, 21, 0.2) 0%, transparent 70%),
+    linear-gradient(160deg, #2d0a12 0%, #6B1D2E 35%, #8b2940 60%, #4a1520 100%);
   border-radius: var(--radius-lg);
   padding: var(--space-8) var(--space-6) var(--space-6);
   display: flex;
@@ -17,7 +17,7 @@
   gap: var(--space-4);
   box-shadow:
     var(--shadow-lg),
-    0 0 60px -10px rgba(30, 58, 138, 0.3);
+    0 0 60px -10px rgba(107, 29, 46, 0.4);
   margin-bottom: var(--space-6);
   position: relative;
   overflow: hidden;
@@ -47,8 +47,8 @@
   border-radius: 50%;
   background: radial-gradient(
     ellipse at center,
-    rgba(96, 165, 250, 0.25) 0%,
-    rgba(59, 130, 246, 0.12) 40%,
+    rgba(200, 164, 21, 0.25) 0%,
+    rgba(200, 164, 21, 0.1) 40%,
     transparent 70%
   );
 }
@@ -69,7 +69,7 @@
   background: radial-gradient(
     ellipse 70% 70% at 50% 40%,
     transparent 50%,
-    rgba(15, 23, 42, 0.4) 100%
+    rgba(30, 8, 14, 0.45) 100%
   );
 }
 
@@ -215,8 +215,8 @@
 }
 
 .chip:hover {
-  background-color: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(200, 164, 21, 0.15);
+  border-color: rgba(200, 164, 21, 0.8);
 }
 
 .chip:focus-visible {
@@ -282,8 +282,8 @@
   min-height: 44px;
   min-width: 44px;
   padding: var(--space-2) var(--space-5);
-  background-color: var(--color-text-inverse);
-  color: var(--color-accent);
+  background-color: #C8A415;
+  color: #2d0a12;
   border: none;
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
@@ -294,7 +294,7 @@
 }
 
 .sendBtn:hover {
-  background-color: var(--color-accent-light);
+  background-color: #d4b52a;
 }
 
 .sendBtn:focus-visible {

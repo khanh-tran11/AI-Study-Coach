@@ -5,9 +5,9 @@
 
 .avatar {
   display: block;
-  /* Soft glow behind the panther character */
-  filter: drop-shadow(0 4px 24px rgba(30, 58, 138, 0.4))
-          drop-shadow(0 0 40px rgba(37, 99, 235, 0.2));
+  /* Soft gold glow behind the panther character */
+  filter: drop-shadow(0 4px 24px rgba(200, 164, 21, 0.35))
+          drop-shadow(0 0 40px rgba(200, 164, 21, 0.15));
 }
 
 /* ----------------------------------------------------------
