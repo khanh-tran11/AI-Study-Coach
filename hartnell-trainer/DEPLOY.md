@@ -2,7 +2,10 @@
 
 This is the **verified, working** way to run the app end-to-end. `progress`
 and `chat` are wired to our real AWS backend (Bedrock + DynamoDB); `auth`,
-`training`, and `upload` run as before, unchanged.
+`training`, and `upload` run as before, unchanged. The Admin "Applicants"
+tab is wired to a real, separate Flask backend (`manager-side/`, Khanh's
+DynamoDB-backed employee tracking + cheating-detection logic) — see its
+own section below.
 
 No cloud deployment yet — see "Cloud deployment (not done)" at the bottom
 for why, and what's already scaffolded for later.
@@ -12,10 +15,13 @@ for why, and what's already scaffolded for later.
 ## Prerequisites
 
 - **Node.js** (LTS) and npm — https://nodejs.org
-- Internet access (the app calls our live AWS API Gateway endpoint)
-
-No AWS CLI, SAM CLI, or AWS credentials needed to run this locally — the
-Express server just makes plain HTTPS calls to an already-deployed API.
+- **Python 3** and pip (only needed for the Admin "Applicants" tab's real
+  backend — everything else works without Python)
+- Internet access (the app calls our live AWS API Gateway endpoint, and
+  the manager-side Flask app calls DynamoDB/Bedrock directly)
+- AWS credentials configured for the manager-side Flask app specifically
+  (e.g. `AWS_PROFILE` set to an SSO profile with DynamoDB + Bedrock access
+  in `us-west-2`) — the main Express/React app needs none of this itself.
 
 ---
 
@@ -67,6 +73,29 @@ release the ports: `Get-Process node | Stop-Process -Force` in PowerShell).
 
 ---
 
+## Start the manager-side Flask backend (for the Admin "Applicants" tab)
+
+From the repo root, in a separate terminal:
+
+```bash
+cd manager-side
+pip install -r requirements.txt
+python app.py
+```
+
+Wait for `Running on http://127.0.0.1:5001`. This must be running
+*before* you open the Admin "Applicants" tab, or it'll show a "could not
+load tracking data" error (Express's `server/routes/manager.js` proxies
+to it and logs the real error to the Express terminal if it can't reach
+it). It uses the **real** `AITrainerProgress` DynamoDB table — a 3-module
+pilot curriculum ("Intro to AI", "Data Basics", "Machine Learning"), not
+the Canvas Onboarding curriculum the rest of the app trains on. That's
+intentional — this tab demonstrates the real employee-tracking and
+cheating-detection backend as its own capability, separate from the
+Canvas training content.
+
+---
+
 ## Demo login credentials
 
 From `server/routes/auth.js`:
@@ -97,6 +126,11 @@ From `server/routes/auth.js`:
   (`canvas-ai-trainer-module-progress` table) instead of an in-memory
   store that used to reset on every server restart. Refreshing the page,
   or restarting the server, no longer loses progress.
+- **Admin → Applicants tab** — shows real employees (Lisa, John, Mike,
+  Kevin, Sarah) from `AITrainerProgress`, with real completion %, real
+  time-spent, and real cheating-detection status badges ("⚠️ Cheating
+  Flagged" / "⚠️ Warning") computed by Khanh's `manager-side/db.py` logic
+  — not mocked. Requires the Flask backend running (see above).
 
 ---
 

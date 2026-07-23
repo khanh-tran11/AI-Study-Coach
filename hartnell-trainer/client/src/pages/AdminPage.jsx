@@ -1,9 +1,37 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { HartnellLogo } from '../HartnellLogo';
+import api from '../api';
 import styles from './AdminPage.module.css';
+
+// Real per-(employee, module) records from AITrainerProgress, via
+// manager-side/app.py (Flask, real DynamoDB + cheating-detection logic —
+// see server/routes/manager.js). Aggregated into one row per employee.
+function aggregateEmployees(records) {
+  const byName = {};
+  for (const r of records) {
+    if (!byName[r.name]) byName[r.name] = { name: r.name, modules: [] };
+    byName[r.name].modules.push(r);
+  }
+  return Object.values(byName).map(emp => {
+    const totalModules = emp.modules.length;
+    const completed = emp.modules.filter(m => m.progress === 'completed').length;
+    const totalMinutes = emp.modules.reduce((sum, m) => sum + (parseFloat(m.time_spent) || 0), 0);
+    const worstAlert = emp.modules.some(m => m.alert_status === 'cheating_reported')
+      ? 'cheating_reported'
+      : emp.modules.some(m => m.alert_status === 'warning')
+        ? 'warning'
+        : 'normal';
+    const lastActive = emp.modules
+      .map(m => m.last_updated)
+      .filter(Boolean)
+      .sort()
+      .pop();
+    return { ...emp, totalModules, completed, totalMinutes, worstAlert, lastActive };
+  });
+}
 
 const MODULE_TEMPLATES = [
   { title:'Canvas Orientation',       duration:'45 min', source:'canvas-orientation-guide.pdf',  topics:['Navigating the dashboard','Course shell overview','Student roster'] },
@@ -40,15 +68,19 @@ export default function AdminPage() {
   const [dragOver, setDragOver]  = useState(false);
   const fileRef = useRef();
 
-  // Applicant mock data
-  const APPLICANTS = [
-    { name:'Dr. Maria Santos',    email:'m.santos@hartnell.edu', done:10, hours:14.5, last:'Jul 21' },
-    { name:'Prof. James Okafor',  email:'j.okafor@hartnell.edu', done:10, hours:12.0, last:'Jul 19' },
-    { name:'Dr. Linda Cheng',     email:'l.cheng@hartnell.edu',  done:10, hours:16.0, last:'Jul 20' },
-    { name:'Prof. Ahmed Yusuf',   email:'a.yusuf@hartnell.edu',  done:7,  hours:9.5,  last:'Jul 22' },
-    { name:'Dr. Rachel Kim',      email:'r.kim@hartnell.edu',    done:5,  hours:6.5,  last:'Jul 18' },
-    { name:'Prof. Carlos Rivera', email:'c.rivera@hartnell.edu', done:0,  hours:0,    last:'—' },
-  ];
+  // Real employee tracking data — from AITrainerProgress via Khanh's
+  // manager-side Flask app (real DynamoDB + cheating-detection logic),
+  // proxied through server/routes/manager.js. Not mocked.
+  const [employees, setEmployees] = useState([]);
+  const [employeesLoading, setEmployeesLoading] = useState(true);
+  const [employeesError, setEmployeesError] = useState(null);
+
+  useEffect(() => {
+    api.get('/api/manager/employees')
+      .then(r => setEmployees(aggregateEmployees(r.data)))
+      .catch(() => setEmployeesError('Could not load tracking data. Is manager-side/app.py running on :5001?'))
+      .finally(() => setEmployeesLoading(false));
+  }, []);
 
   function addFiles(incoming) {
     const newFiles = incoming.filter(f => !files.find(e => e.name === f.name))
@@ -76,10 +108,12 @@ export default function AdminPage() {
     setTimeout(() => { setGen(false); setGenerated(true); setTab('modules'); }, 2000);
   }
 
-  const statusBadge = (done) => {
-    if (done === 10) return <span className={`${styles.badge} ${styles.badgeDone}`}>Completed</span>;
-    if (done > 0)    return <span className={`${styles.badge} ${styles.badgeProg}`}>In Progress</span>;
-    return               <span className={`${styles.badge} ${styles.badgePend}`}>Not Started</span>;
+  const statusBadge = (emp) => {
+    if (emp.worstAlert === 'cheating_reported') return <span className={`${styles.badge} ${styles.badgeAlert}`}>⚠️ Cheating Flagged</span>;
+    if (emp.worstAlert === 'warning')           return <span className={`${styles.badge} ${styles.badgeProg}`}>⚠️ Warning</span>;
+    if (emp.completed === emp.totalModules)     return <span className={`${styles.badge} ${styles.badgeDone}`}>Completed</span>;
+    if (emp.completed > 0)                      return <span className={`${styles.badge} ${styles.badgeProg}`}>In Progress</span>;
+    return                                            <span className={`${styles.badge} ${styles.badgePend}`}>Not Started</span>;
   };
 
   return (
@@ -194,8 +228,8 @@ export default function AdminPage() {
                   <div className={styles.statGrid}>
                     <div className={styles.statBox}><span className={styles.statN}>{files.length}</span><span className={styles.statL}>Files Uploaded</span></div>
                     <div className={styles.statBox}><span className={styles.statN}>{generated?10:0}</span><span className={styles.statL}>Modules</span></div>
-                    <div className={styles.statBox}><span className={styles.statN}>6</span><span className={styles.statL}>Faculty</span></div>
-                    <div className={styles.statBox}><span className={styles.statN}>3</span><span className={styles.statL}>Completed</span></div>
+                    <div className={styles.statBox}><span className={styles.statN}>{employees.length}</span><span className={styles.statL}>Employees</span></div>
+                    <div className={styles.statBox}><span className={styles.statN}>{employees.filter(e=>e.completed===e.totalModules).length}</span><span className={styles.statL}>Completed</span></div>
                   </div>
                   <button className={styles.btnOutline} onClick={()=>setTab('applicants')}>View Applicant Dashboard →</button>
                 </div>
@@ -225,43 +259,48 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ═══ APPLICANTS TAB ═══ */}
+        {/* ═══ APPLICANTS TAB (real data: AITrainerProgress via manager-side Flask) ═══ */}
         {tab === 'applicants' && (
           <div className={styles.card}>
-            <div className={styles.cardHeader}><h2>📊 Faculty Progress</h2><span className={styles.chip}>{APPLICANTS.length} faculty</span></div>
+            <div className={styles.cardHeader}><h2>📊 Employee Training Progress</h2><span className={styles.chip}>{employees.length} employees</span></div>
             <div className={styles.cardBody} style={{padding:0}}>
+              {employeesLoading && <p className={styles.emptyNote}>Loading real tracking data…</p>}
+              {employeesError && <p className={styles.emptyNote}>{employeesError}</p>}
+              {!employeesLoading && !employeesError && (
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Faculty Member</th><th>Status</th><th>Modules</th><th>%</th><th>Hours</th><th>Last Active</th></tr>
+                  <tr><th>Employee</th><th>Status</th><th>Modules</th><th>%</th><th>Time Spent</th><th>Last Active</th></tr>
                 </thead>
                 <tbody>
-                  {APPLICANTS.map((a,i) => {
-                    const pct = Math.round((a.done/10)*100);
+                  {employees.map((emp,i) => {
+                    const pct = Math.round((emp.completed/emp.totalModules)*100);
+                    const hours = +(emp.totalMinutes/60).toFixed(1);
                     return (
-                      <tr key={i}>
+                      <tr key={emp.name}>
                         <td>
                           <div className={styles.nameCell}>
                             <div className={styles.avatar} style={{background: ['#860038','#48002e','#0770A3','#1a7a3c','#c07000','#5B3F9E'][i%6]}}>
-                              {a.name.split(' ').map(w=>w[0]).join('').slice(0,2)}
+                              {emp.name.slice(0,2).toUpperCase()}
                             </div>
-                            <div><div className={styles.aName}>{a.name}</div><div className={styles.aEmail}>{a.email}</div></div>
+                            <div><div className={styles.aName}>{emp.name}</div></div>
                           </div>
                         </td>
-                        <td>{statusBadge(a.done)}</td>
+                        <td>{statusBadge(emp)}</td>
                         <td>
                           <div className={styles.progWrap}>
                             <div className={styles.progBar}><div className={styles.progFill} style={{width:`${pct}%`,background:pct===100?'var(--success)':pct>50?'var(--hc-gold)':'var(--hc-magenta)'}}/></div>
-                            <span className={styles.progTxt}>{a.done}/10</span>
+                            <span className={styles.progTxt}>{emp.completed}/{emp.totalModules}</span>
                           </div>
                         </td>
                         <td><strong>{pct}%</strong></td>
-                        <td>{a.hours>0?a.hours+' hrs':'—'}</td>
-                        <td className={styles.lastActive}>{a.last}</td>
+                        <td>{hours>0?hours+' hrs':'—'}</td>
+                        <td className={styles.lastActive}>{emp.lastActive ? new Date(emp.lastActive).toLocaleDateString() : '—'}</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
+              )}
             </div>
           </div>
         )}
