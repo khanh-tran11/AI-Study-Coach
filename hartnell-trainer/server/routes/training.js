@@ -1,7 +1,18 @@
 const express = require('express');
+const path    = require('path');
+const fs      = require('fs');
 const { S3Client, GetObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const router = express.Router();
+
+// ── Load generated modules from disk ──
+const MODULES_FILE = path.join(__dirname, '..', 'generated-modules.json');
+function loadGeneratedModules() {
+  try {
+    if (fs.existsSync(MODULES_FILE)) return JSON.parse(fs.readFileSync(MODULES_FILE, 'utf-8'));
+  } catch { /* ignore */ }
+  return [];
+}
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
@@ -32,20 +43,45 @@ async function presign(key) {
 }
 
 /**
+ * GET /api/training
+ * Returns the list of all available modules.
+ */
+router.get('/', (_req, res) => {
+  const generated = loadGeneratedModules();
+  const DEFAULT_MODULES = [
+    { id: 1, title: 'Canvas Orientation', estimatedMinutes: 45 },
+    { id: 2, title: 'Setting Up Your Shell', estimatedMinutes: 60 },
+    { id: 3, title: 'Course Content Upload', estimatedMinutes: 50 },
+    { id: 4, title: 'Assignments & Quizzes', estimatedMinutes: 55 },
+    { id: 5, title: 'Gradebook & Exports', estimatedMinutes: 40 },
+    { id: 6, title: 'Communication Tools', estimatedMinutes: 35 },
+    { id: 7, title: 'Accessibility Standards', estimatedMinutes: 50 },
+    { id: 8, title: 'Student View & Testing', estimatedMinutes: 30 },
+    { id: 9, title: 'LMS Admin Intro', estimatedMinutes: 45 },
+    { id: 10, title: 'Capstone & Certification', estimatedMinutes: 60 },
+  ];
+  const modules = generated.length > 0
+    ? generated.map((m, i) => ({ id: m.id || i + 1, title: m.title, description: m.description, estimatedMinutes: m.estimatedMinutes || 45 }))
+    : DEFAULT_MODULES;
+  res.json({ modules, count: modules.length, source: generated.length > 0 ? 'generated' : 'default' });
+});
+
+/**
  * GET /api/training/:moduleId
- * Returns the parsed JSON lesson schema + presigned URLs for assets.
- *
- * S3 folder convention:
- *   modules/<moduleId>/lesson.json   — lesson schema
- *   modules/<moduleId>/videos/       — .mp4 / .mov files
- *   modules/<moduleId>/images/       — .jpg / .png files
  */
 router.get('/:moduleId', async (req, res) => {
   const { moduleId } = req.params;
   const prefix = `modules/${moduleId}/`;
 
   try {
-    // 1. Load lesson schema
+    // Check generated modules first
+    const generatedModules = loadGeneratedModules();
+    const genMod = generatedModules.find(m => String(m.id) === String(moduleId));
+    if (genMod) {
+      return res.json({ moduleId, lesson: genMod, assets: { videos: [], images: [] } });
+    }
+
+    // Try S3
     let lesson;
     try {
       const raw = await s3ToString(`${prefix}lesson.json`);

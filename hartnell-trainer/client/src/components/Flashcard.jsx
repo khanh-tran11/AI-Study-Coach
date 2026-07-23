@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './Flashcard.module.css';
 
-export default function Flashcard({ cards = [] }) {
+export default function Flashcard({ cards = [], onComplete }) {
   const [index,    setIndex]    = useState(0);
   const [flipped,  setFlipped]  = useState(false);
   const [done,     setDone]     = useState(false);
@@ -15,7 +15,7 @@ export default function Flashcard({ cards = [] }) {
   function flip() { setFlipped(f => !f); }
 
   function next() {
-    if (index + 1 >= cards.length) { setDone(true); return; }
+    if (index + 1 >= cards.length) { setDone(true); onComplete?.(); return; }
     setFlipped(false);
     setTimeout(() => setIndex(i => i + 1), 180);
   }

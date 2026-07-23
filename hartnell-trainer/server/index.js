@@ -6,18 +6,20 @@ const trainingRoutes = require('./routes/training');
 const progressRoutes = require('./routes/progress');
 const chatRoutes     = require('./routes/chat');
 const authRoutes     = require('./routes/auth');
+const uploadRoutes   = require('./routes/upload');
 
 const app  = express();
 const PORT = process.env.PORT || 4000;
 
 app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Routes
 app.use('/api/training', trainingRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/chat',     chatRoutes);
 app.use('/api/auth',     authRoutes);
+app.use('/api/upload',   uploadRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'Hartnell AI Trainer' }));
 

@@ -7,8 +7,9 @@ import AdminPage    from './pages/AdminPage';
 // Role-based guard
 function RequireRole({ role, children }) {
   const { user } = useAuth();
-  if (!user)             return <Navigate to="/"        replace />;
-  if (user.role !== role) return <Navigate to={user.role === 'admin' ? '/admin' : '/training'} replace />;
+  if (!user) return <Navigate to="/" replace />;
+  const roles = Array.isArray(role) ? role : [role];
+  if (!roles.includes(user.role)) return <Navigate to={user.role === 'admin' ? '/admin' : '/training'} replace />;
   return children;
 }
 
@@ -28,7 +29,7 @@ export default function App() {
       <Route
         path="/training"
         element={
-          <RequireRole role="faculty">
+          <RequireRole role={['faculty', 'admin']}>
             <TrainingPage />
           </RequireRole>
         }
