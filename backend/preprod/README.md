@@ -54,18 +54,36 @@ canvas-ai-trainer-preprod-module-generator (Lambda)
   presigned-URL upload → S3 → Lambda trigger → Bedrock generation →
   displayed as a real generated module card in the UI (not the old
   hardcoded `MODULE_TEMPLATES`).
+- **`.pdf` extraction confirmed working** (via `pdfplumber`) against a real
+  uploaded PDF — generated a correct module in ~19s.
 - Knowledge base sync + retrieval confirmed against a generated module.
 
-## Known limitations (by design, for this first pass)
+## Known limitations
 
-- **Only `.txt` uploads actually generate a module.** `.pdf`, `.docx`,
-  `.doc`, `.pptx`, `.ppt`, `.mp4`, `.mov` are accepted by the dropzone
-  (matching the existing UI's `accept` list) but the module-generator
-  Lambda logs a warning and skips them — see
-  `backend/preprod/module_generator.py`'s `KNOWN_UNSUPPORTED_EXTENSIONS`.
-  Real support would need: `pdfplumber`/`PyPDF2` (PDF), `python-docx`
-  (DOCX), `python-pptx` (PPTX), and a transcription step — e.g. Amazon
-  Transcribe — for video, each as an added Lambda layer or dependency.
+- **`.pptx` extraction has a real, unresolved issue.** The `python-pptx`
+  text extraction itself works (completes in ~2s), but the subsequent
+  Bedrock `converse()` call hung and never returned for one real test
+  file — tried timeouts of 60s, 120s, and 300s, all exhausted with no
+  exception raised (not a JSON/parsing error, the call itself never
+  completed). Suspected cause: rapid repeated test invocations against
+  the same model during debugging may have triggered Bedrock-side
+  throttling, with boto3's automatic retry/backoff silently consuming the
+  entire timeout window before surfacing anything catchable — **this is
+  unconfirmed**, not verified via CloudWatch throttling metrics. Timeout
+  is currently set back to 90s (fail fast rather than burn 5 minutes of
+  billed compute per attempt) pending further investigation.
+- **`.docx`, `.doc`, `.ppt`, `.mp4`, `.mov` are not implemented at all** —
+  accepted by the dropzone (matching the existing UI's `accept` list) but
+  the module-generator Lambda logs a warning and skips them, see
+  `KNOWN_UNSUPPORTED_EXTENSIONS` in `module_generator.py`. Real support
+  would need `python-docx` (DOCX) and a transcription step — e.g. Amazon
+  Transcribe — for video.
+- **Output length vs. Lambda timeout is a real tension for dense content.**
+  `MAX_OUTPUT_TOKENS` (8192) and `MAX_INPUT_CHARS` (16,000) are tuned
+  defaults, not guarantees — very bullet-dense source material can
+  generate verbose structured JSON that takes longer than expected. If
+  modules stop generating for a specific file, check CloudWatch logs for
+  that Lambda first (`/aws/lambda/canvas-ai-trainer-preprod-module-generator`).
 - **KB sync is still manual.** Same gotcha as production: uploading a file
   doesn't automatically sync `canvasAITrainer-preprod` — someone has to
   call `start-ingestion-job` (or a future automation would call it after
