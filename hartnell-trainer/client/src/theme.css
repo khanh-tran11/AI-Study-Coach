@@ -1,0 +1,59 @@
+/* ── Hartnell College Official Brand Tokens ── */
+/* Source: hartnell.edu/communications/branding-guidelines.html */
+:root {
+  /* Primary */
+  --hc-magenta:   #860038;   /* Hartnell Magenta  — PMS 221c */
+  --hc-burgundy:  #48002e;   /* Hartnell Burgundy — PMS 609c */
+  --hc-gold:      #fdb913;   /* Hartnell Gold     — PMS 1235c */
+  --hc-light:     #ecedef;   /* Hartnell Light    — Cool Gray 1C */
+
+  /* Secondary grays */
+  --hc-gray-light:  #d0d3d9;
+  --hc-gray-mid:    #acafb8;
+  --hc-gray-dark:   #7d818b;
+  --hc-charcoal:    #231f20;
+
+  /* Accent */
+  --hc-blue:      #87b0ff;   /* Hartnell Blue — PMS 278c — use sparingly */
+
+  /* Semantic aliases */
+  --primary:      var(--hc-magenta);
+  --primary-dark: var(--hc-burgundy);
+  --accent:       var(--hc-gold);
+  --bg:           #f8f4f6;
+  --surface:      #ffffff;
+  --border:       var(--hc-gray-light);
+  --text:         var(--hc-charcoal);
+  --text-light:   var(--hc-gray-dark);
+  --success:      #1a7a3c;
+  --error:        #c0392b;
+  --warning:      #d4880a;
+
+  /* Spacing & radius */
+  --radius-sm:  6px;
+  --radius:     10px;
+  --radius-lg:  16px;
+  --shadow-sm:  0 1px 4px rgba(134,0,56,0.08);
+  --shadow:     0 4px 16px rgba(134,0,56,0.12);
+  --shadow-lg:  0 8px 32px rgba(134,0,56,0.16);
+}
+
+/* ── Global Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button { font-family: inherit; cursor: pointer; }
+input, textarea, select { font-family: inherit; }
+
+/* ── Utility classes ── */
+.sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }

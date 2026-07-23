@@ -1,0 +1,77 @@
+.wrapper { display:flex; flex-direction:column; gap:24px; }
+.loading  { color:var(--text-light); font-size:0.9rem; padding:20px 0; }
+
+/* ── Hero row ── */
+.heroRow { display:flex; gap:24px; align-items:center; flex-wrap:wrap; }
+
+.ringWrap { position:relative; width:120px; height:120px; flex-shrink:0; }
+.ring     { width:100%; height:100%; }
+.ringCenter {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+.ringPct   { font-size:1.5rem; font-weight:900; color:var(--hc-magenta); line-height:1; }
+.ringLabel { font-size:0.68rem; color:var(--text-light); text-transform:uppercase; letter-spacing:0.06em; }
+
+.heroStats { display:grid; grid-template-columns:1fr 1fr; gap:10px; flex:1; min-width:220px; }
+.statBox   { background:var(--hc-light); border-radius:var(--radius); padding:14px 16px; text-align:center; }
+.statN     { display:block; font-size:1.5rem; font-weight:800; color:var(--hc-magenta); line-height:1; }
+.statL     { display:block; font-size:0.72rem; color:var(--text-light); text-transform:uppercase; letter-spacing:0.06em; margin-top:4px; }
+
+/* ── Section title ── */
+.sectionTitle { font-size:0.9rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-light); }
+
+/* ── Module grid ── */
+.moduleGrid { display:flex; flex-direction:column; gap:8px; }
+
+.modCard {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 14px; border-radius:var(--radius);
+  border:1.5px solid var(--border); background:var(--surface);
+  transition:box-shadow 0.15s;
+}
+.modCard:hover { box-shadow:var(--shadow-sm); }
+
+.modNum {
+  width:30px; height:30px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:0.78rem; font-weight:800; flex-shrink:0;
+}
+
+.modInfo { display:flex; flex-direction:column; gap:2px; }
+.modTitle  { font-size:0.88rem; font-weight:700; color:var(--text); }
+.modStatus { font-size:0.75rem; color:var(--text-light); }
+
+/* State variants */
+.done   { border-color:#a8e6bc; background:#f2fbf5; }
+.done   .modNum { background:var(--success); color:#fff; }
+.done   .modTitle { color:var(--success); }
+
+.active { border-color:var(--hc-magenta); background:#fdf4f7; }
+.active .modNum { background:var(--hc-magenta); color:#fff; }
+
+.locked { opacity:0.45; }
+.locked .modNum { background:var(--hc-gray-light); color:var(--text-light); }
+
+/* ── Banners ── */
+.escalationBanner {
+  background:#fff8e1; border:1px solid #ffe082;
+  border-radius:var(--radius); padding:16px 18px;
+  font-size:0.88rem; color:#7a5200;
+  display:flex; flex-direction:column; gap:10px;
+}
+.escalationLinks { display:flex; gap:8px; flex-wrap:wrap; }
+.escBtn {
+  padding:7px 14px; border-radius:6px;
+  border:1px solid #e0c060; background:#fff8e1;
+  color:#7a5200; font-size:0.8rem; font-weight:600;
+  cursor:pointer; transition:background 0.15s;
+}
+.escBtn:hover { background:#ffe082; }
+
+.certBanner {
+  background:#edfbf1; border:1px solid #a8e6bc;
+  border-radius:var(--radius); padding:16px 18px;
+  font-size:0.9rem; color:var(--success);
+  text-align:center;
+}

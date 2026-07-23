@@ -1,0 +1,21 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        # Install dependencies from the hartnell-trainer folder
+        - cd hartnell-trainer
+        - npm ci
+    build:
+      commands:
+        # REACT_APP_API_URL is injected by Amplify as an environment variable
+        # Set it in the Amplify console → App settings → Environment variables
+        - npm run build
+  artifacts:
+    # Output folder from react-scripts build
+    baseDirectory: hartnell-trainer/build
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - hartnell-trainer/node_modules/**/*

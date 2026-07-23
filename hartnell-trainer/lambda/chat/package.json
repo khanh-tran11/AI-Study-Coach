@@ -1,0 +1,8 @@
+{
+  "name": "hartnell-lambda-chat",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "openai": "^4.52.7"
+  }
+}

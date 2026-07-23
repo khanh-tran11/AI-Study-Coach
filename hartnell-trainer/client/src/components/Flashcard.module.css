@@ -1,0 +1,73 @@
+.wrapper { display:flex; flex-direction:column; align-items:center; gap:16px; padding:8px 0; }
+
+.meta { display:flex; justify-content:space-between; width:100%; max-width:480px; font-size:0.82rem; color:var(--text-light); }
+.hint { font-style:italic; }
+
+.dots { display:flex; gap:6px; }
+.dot { width:10px; height:10px; border-radius:50%; background:var(--border); transition:background 0.2s; }
+.dotActive { background:var(--hc-magenta); }
+.dotDone   { background:var(--hc-gold); }
+
+/* 3-D scene */
+.scene { width:100%; max-width:480px; height:260px; perspective:900px; cursor:pointer; }
+
+.card { width:100%; height:100%; position:relative; }
+
+.face {
+  position:absolute; inset:0;
+  border-radius:var(--radius-lg);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:32px 28px; text-align:center;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  box-shadow:var(--shadow);
+}
+
+.front {
+  background:linear-gradient(145deg, var(--hc-magenta) 0%, var(--hc-burgundy) 100%);
+  color:#fff;
+}
+
+.back {
+  background:linear-gradient(145deg, var(--hc-gold) 0%, #e8a800 100%);
+  color:var(--hc-charcoal);
+  transform:rotateY(180deg);
+}
+
+.faceLabel {
+  position:absolute; top:14px; left:18px;
+  font-size:0.72rem; font-weight:700; letter-spacing:0.1em;
+  text-transform:uppercase; opacity:0.7;
+}
+
+.cardText { font-size:1.05rem; font-weight:600; line-height:1.55; }
+
+.flipCue {
+  position:absolute; bottom:14px;
+  font-size:0.75rem; opacity:0.55; letter-spacing:0.04em;
+}
+
+.controls { display:flex; gap:12px; width:100%; max-width:480px; }
+
+.btnPrimary {
+  flex:1; padding:11px; background:var(--hc-magenta); color:#fff;
+  border:none; border-radius:var(--radius); font-weight:700; font-size:0.9rem;
+  transition:background 0.18s;
+}
+.btnPrimary:hover { background:var(--hc-burgundy); }
+
+.btnSecondary {
+  flex:1; padding:11px; background:transparent;
+  border:1.5px solid var(--border); color:var(--text-light);
+  border-radius:var(--radius); font-weight:700; font-size:0.9rem;
+  transition:all 0.18s;
+}
+.btnSecondary:hover:not(:disabled) { border-color:var(--hc-magenta); color:var(--hc-magenta); }
+.btnSecondary:disabled { opacity:0.35; cursor:not-allowed; }
+
+/* Done screen */
+.done { text-align:center; padding:40px 20px; }
+.doneIcon { font-size:3rem; margin-bottom:12px; }
+.done h3 { font-size:1.2rem; font-weight:800; margin-bottom:6px; color:var(--hc-magenta); }
+.done p  { color:var(--text-light); font-size:0.9rem; margin-bottom:20px; }
