@@ -54,6 +54,68 @@ role `canvas-ai-trainer-lambda-role` is scoped to `bedrock:Retrieve` on the
 `canvasAITrainer-v2` KB plus `bedrock:InvokeModel`/`bedrock:Converse`, and
 basic CloudWatch Logs access — nothing broader.
 
+## Module progress tracking (DynamoDB)
+
+Two more Lambdas on the same `canvas-ai-trainer-api` Gateway
+(`yhpt0ck7c7`), built to match `hartnell-trainer`'s frontend contract
+(`client/src/api.js`'s `fetchProgress`/`updateProgress`, consumed by
+`ProgressDashboard.jsx` and `TrainingPage.jsx`) **field-for-field** — same
+request/response shape as the reference in-memory implementation in
+`hartnell-trainer/server/routes/progress.js`.
+
+```
+GET  https://yhpt0ck7c7.execute-api.us-west-2.amazonaws.com/api/progress/{userId}
+POST https://yhpt0ck7c7.execute-api.us-west-2.amazonaws.com/api/progress/update
+```
+
+**POST body:**
+```json
+{ "userId": "2", "moduleId": 1, "stepId": "1-1", "status": "completed", "timeSpentSeconds": 120 }
+```
+
+**Response shape (both GET and the POST's `progress` field):**
+```json
+{
+  "userId": "2",
+  "completedModules": 1,
+  "totalModules": 10,
+  "completionPct": 10,
+  "totalHours": 0.1,
+  "modules": {
+    "1": {
+      "steps": { "1-1": { "status": "completed", "updatedAt": "2026-07-23T21:05:48.503304+00:00" } },
+      "completedAt": "2026-07-23T21:05:48.503304+00:00"
+    }
+  }
+}
+```
+
+A module's `completedAt` is set once every step *recorded so far* for that
+module has `status: "completed"` — this matches the original Express
+route's exact logic (and its exact quirk: if only 1 of 3 real steps has
+been recorded, that alone satisfies "every step is completed"). Faithful
+parity with the reference implementation, not something to "fix" without
+also updating the frontend's assumption.
+
+**Table:** `canvas-ai-trainer-module-progress` — partition key `userId`
+(String) only, one item per user containing the full nested `modules` map.
+Real `userId`s are `"1"`–`"5"`, defined in
+`hartnell-trainer/server/routes/auth.js` (not to be confused with
+`AITrainerProgress`, a separate table with partition key `name` + sort key
+`module` — that one belongs to a different, unrelated feature — likely an
+instructor-facing monitoring/alerts dashboard — and stores flat per-module
+status for users/modules that don't exist in this app's actual auth system
+or curriculum. Don't reuse it here.)
+
+**Infrastructure:** Lambdas `canvas-ai-trainer-progress-get` and
+`canvas-ai-trainer-progress-update` (Python 3.12, 15s timeout, 256MB),
+role `canvas-ai-trainer-progress-lambda-role` scoped to `dynamodb:GetItem`/
+`PutItem` on this table only, plus CloudWatch Logs.
+
+**Verified end-to-end:** empty-state GET for a user with no record, a
+3-step POST sequence for a real userId, GET read-back matching exactly,
+and the missing-field 400 path — all tested against the live endpoint.
+
 ## Why a two-step retrieve → generate pattern
 
 The knowledge base (`canvasAITrainer-v2`) is a Bedrock **MANAGED**-type
