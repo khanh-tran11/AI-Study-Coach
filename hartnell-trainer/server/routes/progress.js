@@ -1,64 +1,40 @@
 const express = require('express');
+const axios   = require('axios');
 const router  = express.Router();
 
-// In-memory store — swap for a real DB (Postgres/DynamoDB) in production
-const progressStore = {};
+// Real DynamoDB-backed progress tracking via our AWS Lambda + API Gateway.
+// Replaces the previous in-memory store. Response shape is unchanged —
+// the Lambda was built to match this route's exact contract, so no
+// transformation is needed on either side.
+// See AI-Study-Coach backend/progress/ and backend/README.md for the
+// Lambda implementation and DynamoDB schema.
+const PROGRESS_API_BASE = 'https://yhpt0ck7c7.execute-api.us-west-2.amazonaws.com';
 
 /**
  * POST /api/progress/update
  * Body: { userId, moduleId, stepId, status: 'completed'|'in_progress', timeSpentSeconds }
  */
-router.post('/update', (req, res) => {
-  const { userId, moduleId, stepId, status, timeSpentSeconds = 0 } = req.body;
-  if (!userId || !moduleId || !stepId) {
-    return res.status(400).json({ error: 'userId, moduleId, and stepId are required.' });
+router.post('/update', async (req, res) => {
+  try {
+    const { data } = await axios.post(`${PROGRESS_API_BASE}/api/progress/update`, req.body);
+    res.json(data);
+  } catch (err) {
+    console.error('Progress update failed:', err.message);
+    res.status(500).json({ error: 'Failed to update progress.' });
   }
-
-  if (!progressStore[userId]) progressStore[userId] = { modules: {}, totalSeconds: 0 };
-  const user = progressStore[userId];
-
-  if (!user.modules[moduleId]) user.modules[moduleId] = { steps: {}, completedAt: null };
-  const mod = user.modules[moduleId];
-
-  mod.steps[stepId] = { status, updatedAt: new Date().toISOString() };
-  user.totalSeconds += timeSpentSeconds;
-
-  // Mark module complete when all steps in the lesson are done
-  const stepStatuses = Object.values(mod.steps);
-  if (status === 'completed' && stepStatuses.every(s => s.status === 'completed')) {
-    mod.completedAt = new Date().toISOString();
-  }
-
-  res.json({ success: true, progress: getUserStats(userId) });
 });
 
 /**
  * GET /api/progress/:userId
  */
-router.get('/:userId', (req, res) => {
-  const { userId } = req.params;
-  if (!progressStore[userId]) return res.json(getEmptyStats(userId));
-  res.json(getUserStats(userId));
+router.get('/:userId', async (req, res) => {
+  try {
+    const { data } = await axios.get(`${PROGRESS_API_BASE}/api/progress/${req.params.userId}`);
+    res.json(data);
+  } catch (err) {
+    console.error('Progress fetch failed:', err.message);
+    res.status(500).json({ error: 'Failed to fetch progress.' });
+  }
 });
-
-function getUserStats(userId) {
-  const data = progressStore[userId];
-  if (!data) return getEmptyStats(userId);
-  const completedModules = Object.values(data.modules).filter(m => m.completedAt).length;
-  const totalModules = 10;
-  return {
-    userId,
-    completedModules,
-    totalModules,
-    completionPct: Math.round((completedModules / totalModules) * 100),
-    totalHours: +(data.totalSeconds / 3600).toFixed(1),
-    modules: data.modules,
-    escalationStatus: completionPct => completionPct >= 100 ? 'certified' : completionPct >= 50 ? 'on_track' : 'needs_attention',
-  };
-}
-
-function getEmptyStats(userId) {
-  return { userId, completedModules: 0, totalModules: 10, completionPct: 0, totalHours: 0, modules: {} };
-}
 
 module.exports = router;
