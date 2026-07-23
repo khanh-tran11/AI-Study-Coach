@@ -1,0 +1,96 @@
+/* ============================================================
+   ModuleProgressBar — Card-style progress widget
+   ============================================================ */
+
+.card {
+  background-color: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Module name */
+.moduleName {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: var(--line-height-heading);
+}
+
+/* Step counter row */
+.stepRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stepCounter {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* "Next Step" button — outline style, right-aligned */
+.nextBtn {
+  font-size: var(--font-size-sm);
+  padding: var(--space-1) var(--space-4);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-accent);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.nextBtn:hover:not(:disabled) {
+  background-color: var(--color-accent);
+  color: var(--color-text-on-accent);
+}
+
+.nextBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ----------------------------------------------------------------
+   Progress bar
+   We hide the native <progress> visually but keep it for semantics,
+   and render a styled <div role="progressbar"> on top for styling.
+   ---------------------------------------------------------------- */
+
+/* Visually-hidden native <progress> for screen readers */
+.nativeProgress {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Track */
+.track {
+  width: 100%;
+  height: 12px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-bg-subtle);
+  overflow: hidden;
+  /* Ensure track is its own stacking context so fill stays inside */
+  position: relative;
+}
+
+/* Fill — accent blue on light-gray track: #1e3a8a on #eef0f6 ≈ 9.7:1 (passes 3:1) */
+.fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background-color: var(--color-accent);
+  transition: width var(--transition-base);
+  /* transition-base collapses to 0ms under prefers-reduced-motion */
+}

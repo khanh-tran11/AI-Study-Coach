@@ -1,0 +1,91 @@
+/* ============================================================
+   LearnerTable — Sortable learner breakdown table
+   ============================================================ */
+
+.section {
+  width: 100%;
+  margin-top: var(--space-8);
+}
+
+.heading {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-4);
+}
+
+/* Horizontal scroll wrapper for mobile */
+.scrollWrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-bg-surface);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Table header */
+.th {
+  background-color: var(--color-bg-subtle);
+  padding: 0;
+  text-align: left;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+/* Sort button fills entire th */
+.sortBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-align: left;
+}
+
+.sortBtn:hover {
+  color: var(--color-text-primary);
+}
+
+.sortIndicator {
+  font-size: var(--font-size-xs);
+  min-width: 1em;
+}
+
+/* Table cells */
+.td {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+/* Clickable rows */
+.row {
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.row:hover {
+  background-color: var(--color-accent-light);
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}

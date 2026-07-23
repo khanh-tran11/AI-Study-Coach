@@ -1,0 +1,22 @@
+/* ============================================================
+   CompletionChart — SVG bar chart wrapper
+   ============================================================ */
+
+.chartWrapper {
+  background-color: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-md);
+}
+
+.chartHeading {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-4);
+}
+
+.chart {
+  width: 100%;
+  height: auto;
+}

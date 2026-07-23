@@ -1,0 +1,78 @@
+/* ============================================================
+   PantherAvatar — SVG character styles & animations
+   Pink Panther-inspired style, black panther colors
+   ============================================================ */
+
+.avatar {
+  display: block;
+  /* Soft glow behind the panther character */
+  filter: drop-shadow(0 4px 24px rgba(30, 58, 138, 0.4))
+          drop-shadow(0 0 40px rgba(37, 99, 235, 0.2));
+}
+
+/* ----------------------------------------------------------
+   Named group classes (targets for animation)
+   ---------------------------------------------------------- */
+.bodyGroup {
+  transform-origin: 140px 110px;
+  will-change: transform;
+}
+
+.headGroup {}
+.eyeGroup {}
+.leftEar {}
+.rightEar {}
+
+/* ----------------------------------------------------------
+   Eyelids — hidden by default, revealed during blink
+   ---------------------------------------------------------- */
+.eyelid {
+  transform: scaleY(0);
+  will-change: transform;
+}
+
+/* ----------------------------------------------------------
+   Idle Animations — only when user has no motion preference
+   ---------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+
+  /* Breathing: gentle vertical oscillation on the whole body */
+  .bodyGroup {
+    animation: breathe 4s ease-in-out infinite;
+  }
+
+  /* Blink: eyelids flash visible briefly every ~3.5s */
+  .eyelid {
+    animation: blink 3.5s ease-in-out infinite;
+  }
+}
+
+/* ----------------------------------------------------------
+   Keyframes — Breathing
+   ---------------------------------------------------------- */
+@keyframes breathe {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* ----------------------------------------------------------
+   Keyframes — Blink
+   ---------------------------------------------------------- */
+@keyframes blink {
+  0%, 92% {
+    transform: scaleY(0);
+  }
+  95% {
+    transform: scaleY(1);
+  }
+  97% {
+    transform: scaleY(1);
+  }
+  100% {
+    transform: scaleY(0);
+  }
+}

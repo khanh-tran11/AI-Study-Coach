@@ -1,0 +1,130 @@
+/* ============================================================
+   Design Tokens — Universal Learning Dashboard
+   ============================================================ */
+
+:root {
+  /* ----------------------------------------------------------
+     Colors — Text
+     Deep charcoal on white: contrast ratio ~14:1 (WCAG AAA)
+     ---------------------------------------------------------- */
+  --color-text-primary: #1a1a2e;       /* main body text */
+  --color-text-secondary: #3d3d5c;     /* secondary / muted text */
+  --color-text-inverse: #ffffff;       /* text on dark backgrounds */
+  --color-text-on-accent: #ffffff;     /* text on accent-color backgrounds */
+
+  /* ----------------------------------------------------------
+     Colors — Backgrounds
+     ---------------------------------------------------------- */
+  --color-bg-base: #f8f9fc;            /* page background (off-white) */
+  --color-bg-surface: #ffffff;         /* card / panel surfaces */
+  --color-bg-subtle: #eef0f6;          /* subtle row highlights */
+
+  /* ----------------------------------------------------------
+     Colors — Brand Accent (deep indigo/teal)
+     #1e3a8a on white = ~9.7:1  (WCAG AAA for text)
+     #1e3a8a as UI component on white = passes 3:1 for UI
+     ---------------------------------------------------------- */
+  --color-accent: #1e3a8a;             /* primary brand accent */
+  --color-accent-hover: #1e40af;       /* accent hover state */
+  --color-accent-light: #dbeafe;       /* tinted accent background */
+
+  /* ----------------------------------------------------------
+     Colors — Semantic States
+     Each passes 3:1 against white for UI; darker shades pass 4.5:1 for text
+     ---------------------------------------------------------- */
+  --color-success: #166534;            /* success text (contrast ~9:1) */
+  --color-success-bg: #dcfce7;
+  --color-success-border: #16a34a;
+
+  --color-warning: #92400e;            /* warning text (contrast ~7:1) */
+  --color-warning-bg: #fef3c7;
+  --color-warning-border: #d97706;
+
+  --color-error: #991b1b;              /* error text (contrast ~8:1) */
+  --color-error-bg: #fee2e2;
+  --color-error-border: #dc2626;
+
+  /* ----------------------------------------------------------
+     Colors — Borders & Dividers
+     ---------------------------------------------------------- */
+  --color-border: #cbd5e1;
+  --color-border-strong: #94a3b8;
+
+  /* ----------------------------------------------------------
+     Typography — Font Families
+     ---------------------------------------------------------- */
+  --font-family-body: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-family-heading: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  /* ----------------------------------------------------------
+     Typography — Font Sizes (base = 18px / 1.125rem)
+     ---------------------------------------------------------- */
+  --font-size-xs: 0.75rem;    /* 13.5px */
+  --font-size-sm: 0.875rem;   /* 15.75px */
+  --font-size-base: 1.125rem; /* 18px */
+  --font-size-lg: 1.25rem;    /* 22.5px */
+  --font-size-xl: 1.5rem;     /* 27px */
+  --font-size-2xl: 1.875rem;  /* 33.75px */
+  --font-size-3xl: 2.25rem;   /* 40.5px */
+  --font-size-4xl: 3rem;      /* 54px */
+
+  /* ----------------------------------------------------------
+     Typography — Line Heights & Letter Spacing
+     ---------------------------------------------------------- */
+  --line-height-body: 1.6;
+  --line-height-heading: 1.2;
+  --line-height-tight: 1.1;
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-normal: 0;
+
+  /* ----------------------------------------------------------
+     Spacing — 4px base unit
+     --space-1 = 4px, --space-2 = 8px, …, --space-12 = 48px
+     ---------------------------------------------------------- */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-7: 1.75rem;   /* 28px */
+  --space-8: 2rem;      /* 32px */
+  --space-9: 2.25rem;   /* 36px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-11: 2.75rem;  /* 44px */
+  --space-12: 3rem;     /* 48px */
+
+  /* ----------------------------------------------------------
+     Border Radii
+     ---------------------------------------------------------- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* ----------------------------------------------------------
+     Shadows
+     ---------------------------------------------------------- */
+  --shadow-sm: 0 1px 2px 0 rgba(26, 26, 46, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(26, 26, 46, 0.1),
+               0 2px 4px -1px rgba(26, 26, 46, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(26, 26, 46, 0.1),
+               0 4px 6px -2px rgba(26, 26, 46, 0.05);
+
+  /* ----------------------------------------------------------
+     Transitions
+     ---------------------------------------------------------- */
+  --transition-fast: 100ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 350ms ease;
+}
+
+/* Respect user motion preferences — collapse all transitions */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0ms;
+    --transition-base: 0ms;
+    --transition-slow: 0ms;
+  }
+}

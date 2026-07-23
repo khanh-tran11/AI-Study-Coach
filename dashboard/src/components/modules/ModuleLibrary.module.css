@@ -1,0 +1,46 @@
+/* ============================================================
+   ModuleLibrary — styles
+   ============================================================ */
+
+.section {
+  width: 100%;
+}
+
+.heading {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-6);
+}
+
+/* ----------------------------------------------------------
+   Responsive Grid
+   auto-fill ensures columns collapse naturally:
+     desktop (≥1024px): ~3 columns
+     tablet  (768–1023px): ~2 columns
+     mobile  (<768px): 1 column
+   ---------------------------------------------------------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-6);
+}
+
+/* Explicit breakpoint overrides for predictable column counts */
+@media (max-width: 767px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
