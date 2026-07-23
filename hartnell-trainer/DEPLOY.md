@@ -1,221 +1,130 @@
-# Deployment Guide — Hartnell AI Trainer
-No local Node.js required after setup. Everything runs on AWS.
+# Running the Hartnell AI Trainer (local demo)
+
+This is the **verified, working** way to run the app end-to-end. `progress`
+and `chat` are wired to our real AWS backend (Bedrock + DynamoDB); `auth`,
+`training`, and `upload` run as before, unchanged.
+
+No cloud deployment yet — see "Cloud deployment (not done)" at the bottom
+for why, and what's already scaffolded for later.
 
 ---
 
-## Prerequisites (one-time installs)
+## Prerequisites
 
-| Tool | Purpose | Install |
-|---|---|---|
-| AWS CLI | Deploy from terminal | https://aws.amazon.com/cli/ |
-| AWS SAM CLI | Package + deploy Lambda | https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html |
-| Git | Push code to trigger Amplify | https://git-scm.com |
+- **Node.js** (LTS) and npm — https://nodejs.org
+- Internet access (the app calls our live AWS API Gateway endpoint)
 
-Both AWS CLI and SAM CLI are small installers — no Node.js needed.
+No AWS CLI, SAM CLI, or AWS credentials needed to run this locally — the
+Express server just makes plain HTTPS calls to an already-deployed API.
 
 ---
 
-## Step 1 — Configure AWS credentials
+## One-time setup
 
-Open a terminal (PowerShell or CMD) and run:
-
-```bash
-aws configure
-```
-
-Enter:
-- AWS Access Key ID
-- AWS Secret Access Key
-- Default region (e.g. `us-west-2`)
-- Output format: `json`
-
----
-
-## Step 2 — Install Lambda dependencies
-
-Each Lambda function needs its own `node_modules`. Run once before deploying:
-
-```bash
-cd hartnell-trainer/lambda/training  && npm install
-cd ../progress                       && npm install
-cd ../chat                           && npm install
-cd ../auth                           && npm install
-cd ../../..
-```
-
-> You only need Node.js for this step. After this, AWS runs your code — not your machine.
-
----
-
-## Step 3 — Deploy backend (Lambda + API Gateway + DynamoDB + S3)
-
-From the `hartnell-trainer` folder:
+From the repo root:
 
 ```bash
 cd hartnell-trainer
+npm install
 
-# First deploy — creates an S3 bucket for SAM artifacts automatically
-sam deploy --guided
+cd client
+npm install
+cd ..
 ```
 
-When prompted:
-
-| Prompt | Value |
-|---|---|
-| Stack name | `hartnell-trainer` |
-| AWS Region | `us-west-2` (or your region) |
-| OpenAIApiKey | Your OpenAI API key |
-| AmplifyAppId | `placeholder` (update after step 4) |
-| Confirm changes | `Y` |
-| Allow SAM to create IAM roles | `Y` |
-| Save config to samconfig.toml | `Y` |
-
-After deploy finishes, copy the **ApiUrl** from the Outputs section:
-```
-ApiUrl = https://xxxxxxxxxx.execute-api.us-west-2.amazonaws.com/prod
-```
+A working `.env` is already checked into `hartnell-trainer/.env` with
+`PORT=4000`. The AWS/OpenAI placeholder values in it are **not used** by
+the routes we rely on (`progress`/`chat` now call our AWS endpoints
+directly; their URLs are hardcoded in the route files, not read from
+`.env`). Leave `.env` as-is unless you're working on `training.js` or
+`upload.js`, which do still read the AWS/S3 variables.
 
 ---
 
-## Step 4 — Host frontend on AWS Amplify
+## Start everything with one command
 
-### Option A — Amplify Console (easiest, no CLI needed)
-
-1. Push your code to GitHub (or CodeCommit)
-2. Go to **AWS Amplify Console** → https://console.aws.amazon.com/amplify
-3. Click **New app → Host web app**
-4. Connect your GitHub repo, select the `main` branch
-5. Amplify auto-detects `amplify.yml` — click **Next**
-6. Under **Environment variables**, add:
-
-   | Variable | Value |
-   |---|---|
-   | `REACT_APP_API_URL` | The ApiUrl from Step 3 output |
-
-7. Click **Save and deploy**
-
-Amplify builds and hosts your React app automatically. Every `git push` to `main` triggers a new deploy.
-
-### Option B — Amplify CLI
+From `hartnell-trainer/`:
 
 ```bash
-npm install -g @aws-amplify/cli   # one-time
-amplify init
-amplify add hosting
-amplify publish
+npm run dev
 ```
+
+This runs the Express server (`:4000`, via nodemon) and the React dev
+server (`:3000`, via `react-scripts start`) together. Wait for:
+
+```
+Hartnell Trainer API running on :4000
+```
+and
+```
+webpack compiled
+```
+
+Then open **http://localhost:3000**.
+
+To stop: `Ctrl+C` in that terminal (or, on Windows, if it doesn't fully
+release the ports: `Get-Process node | Stop-Process -Force` in PowerShell).
 
 ---
 
-## Step 5 — Update CORS to lock down to your Amplify domain
+## Demo login credentials
 
-After Amplify gives you a URL (e.g. `https://main.abc123.amplifyapp.com`):
+From `server/routes/auth.js`:
 
-1. Open `template.yaml`
-2. Find `FRONTEND_ORIGIN` and replace `*` with your Amplify URL
-3. Re-deploy: `sam deploy`
-
----
-
-## Step 6 — Upload training materials to S3
-
-The S3 bucket name is in the SAM deploy Outputs (`TrainingBucketName`).
-
-```bash
-# Upload a lesson schema
-aws s3 cp lesson.json s3://YOUR-BUCKET/modules/1/lesson.json
-
-# Upload a video
-aws s3 cp canvas-intro.mp4 s3://YOUR-BUCKET/modules/1/videos/canvas-intro.mp4
-
-# Upload an image
-aws s3 cp screenshot.png s3://YOUR-BUCKET/modules/1/images/screenshot.png
-```
-
-**lesson.json format:**
-```json
-{
-  "id": "1",
-  "title": "Canvas Orientation",
-  "description": "Get comfortable with the Canvas dashboard.",
-  "estimatedMinutes": 45,
-  "steps": [
-    {
-      "step_id": "1-1",
-      "tool_id": "canvas-lms",
-      "title": "Introduction",
-      "type": "text",
-      "content": "Welcome to Canvas...",
-      "s3LessonText": "Context passed to the AI assistant."
-    },
-    {
-      "step_id": "1-2",
-      "tool_id": "canvas-lms",
-      "title": "Flashcard Review",
-      "type": "flashcard",
-      "cards": [
-        { "front": "What is a Canvas Shell?", "back": "A course container." }
-      ]
-    }
-  ]
-}
-```
-
----
-
-## Architecture Summary
-
-```
-GitHub repo
-    │  git push
-    ▼
-AWS Amplify ──── builds React app ──── serves at amplifyapp.com
-                        │
-                        │  REACT_APP_API_URL
-                        ▼
-              API Gateway (HTTP API)
-              /auth  /training  /progress  /chat
-                        │
-              ┌─────────┼──────────┬──────────┐
-              ▼         ▼          ▼          ▼
-         Lambda      Lambda     Lambda    Lambda
-          auth      training   progress    chat
-                        │          │         │
-                        ▼          ▼         ▼
-                     S3 Bucket  DynamoDB   OpenAI
-                  (lessons,     (progress   API
-                  videos,       tracking)
-                  images)
-```
-
----
-
-## Re-deploying after code changes
-
-**Backend changes** (Lambda code):
-```bash
-cd hartnell-trainer
-sam deploy
-```
-
-**Frontend changes** (React):
-```bash
-git add .
-git commit -m "update"
-git push origin main
-# Amplify auto-builds and deploys
-```
-
----
-
-## Costs (approximate, free tier friendly)
-
-| Service | Free tier | After free tier |
+| Email | Password | Role |
 |---|---|---|
-| Lambda | 1M requests/month free | ~$0.20 per 1M |
-| API Gateway | 1M calls/month free | ~$1.00 per 1M |
-| DynamoDB | 25 GB + 25 WCU free | Pay per request |
-| S3 | 5 GB free | ~$0.023/GB |
-| Amplify | 1000 build mins/month free | ~$0.01/min |
+| `admin@hartnell.edu` | `admin123` | admin |
+| `m.santos@hartnell.edu` | `faculty123` | faculty |
+| `j.okafor@hartnell.edu` | `faculty123` | faculty |
+| `l.cheng@hartnell.edu` | `faculty123` | faculty |
+| `a.yusuf@hartnell.edu` | `faculty123` | faculty |
 
-For a college pilot with a few dozen faculty, monthly cost is effectively **$0**.
+---
+
+## What to expect
+
+- **Login, module list, module content** — work exactly as before (no AWS
+  dependency; `training.js` falls back to built-in mock lesson content if
+  S3 isn't configured, which it isn't here).
+- **"Ask Panther" chat** — now answers using our real Bedrock knowledge
+  base instead of OpenAI. It answers Canvas-procedure questions well
+  (e.g. "How do I change the name of my course?"). It does **not**
+  remember earlier turns in the conversation and does **not** have the
+  original warm "Panther" tutoring persona — each question is answered in
+  isolation from the Canvas KB only. This is a known, documented tradeoff
+  (see comments in `routes/chat.js`), not a bug.
+- **Completing a step** — writes real progress to DynamoDB
+  (`canvas-ai-trainer-module-progress` table) instead of an in-memory
+  store that used to reset on every server restart. Refreshing the page,
+  or restarting the server, no longer loses progress.
+
+---
+
+## Troubleshooting
+
+- **`Error: Cannot find module 'multer'`** — means `npm install` wasn't
+  run after pulling this branch (multer was a missing dependency in the
+  original code that's now in `package.json`). Re-run `npm install` from
+  `hartnell-trainer/`.
+- **Chat or progress calls fail** — check your internet connection; both
+  routes call `https://yhpt0ck7c7.execute-api.us-west-2.amazonaws.com`
+  directly. Check the Express terminal for the actual error logged by
+  `console.error(...)` in `routes/chat.js` / `routes/progress.js`.
+- **Port already in use** — something didn't shut down cleanly from a
+  previous run. On Windows: `Get-Process node | Stop-Process -Force`,
+  then `npm run dev` again.
+
+---
+
+## Cloud deployment (not done — deliberately, for tonight)
+
+`template.yaml` in this folder describes a fully serverless SAM
+deployment (Lambda + API Gateway + its own DynamoDB table + Amplify
+Hosting). **It has never actually been deployed** (no CloudFormation
+stack, no Amplify app exist in the AWS account), and it predates this
+integration — its own `progress`/`chat` Lambdas still point at OpenAI and
+a separate, empty `HartnellProgress` table, and its API routes don't even
+match what the frontend calls (`/progress/...` vs. the frontend's
+`/api/progress/...`). Treat it as an unfinished, disconnected plan, not a
+deploy target — reworking it or standing up Express somewhere like AWS
+App Runner is future work, not something this local-demo setup depends on.
