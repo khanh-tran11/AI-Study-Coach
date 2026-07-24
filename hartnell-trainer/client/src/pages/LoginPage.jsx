@@ -7,7 +7,7 @@ import styles from './LoginPage.module.css';
 
 const ROLES = [
   { key: 'admin',   icon: '🔑', label: 'Admin / Owner',  desc: 'Upload content, manage modules',  hint: 'admin@hartnell.edu / admin123' },
-  { key: 'faculty', icon: '🎓', label: 'Faculty',         desc: 'Access your Canvas training path', hint: 'm.santos@hartnell.edu / faculty123' },
+  { key: 'faculty', icon: '🎓', label: 'Learner',         desc: 'Access your Canvas training path', hint: 'm.santos@hartnell.edu / learner123' },
 ];
 
 export default function LoginPage() {
@@ -48,7 +48,7 @@ export default function LoginPage() {
         <div className={styles.heroInner}>
           <HartnellLogo size={48} dark />
           <h1 className={styles.heroTitle}>
-            Faculty Onboarding,<br /><span>reimagined.</span>
+            Learner Onboarding,<br /><span>reimagined.</span>
           </h1>
           <p className={styles.heroBody}>
             A conversational AI guide that walks Hartnell College instructors
@@ -123,7 +123,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className={styles.allPass}>All faculty accounts use password: <strong>faculty123</strong></p>
+          <p className={styles.allPass}>All learner accounts use password: <strong>learner123</strong></p>
         </motion.div>
       </div>
     </div>

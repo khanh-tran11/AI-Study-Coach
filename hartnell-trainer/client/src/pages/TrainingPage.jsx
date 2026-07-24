@@ -8,6 +8,7 @@ import Quiz from '../components/Quiz';
 import Matching from '../components/Matching';
 import ProgressDashboard from '../components/ProgressDashboard';
 import ChatPanel from '../components/ChatPanel';
+import { getIconForContent } from '../components/CanvasIcons';
 import styles from './TrainingPage.module.css';
 
 const MODULE_TITLES = [
@@ -231,7 +232,25 @@ export default function TrainingPage() {
                 <div className={styles.widgetArea}>
                   {currentStep?.type === 'text' && (
                     <div className={styles.textContent}>
-                      <p>{currentStep.content}</p>
+                      {/* Split content into sentences and render as guided steps */}
+                      {currentStep.content.split('. ').filter(Boolean).map((sentence, i) => {
+                        const StepIcon = getIconForContent(sentence);
+                        return (
+                          <div key={i} className={styles.guideStep}>
+                            <span className={styles.guideStepNum}>
+                              {StepIcon ? <StepIcon size={16} color="#fff" /> : i + 1}
+                            </span>
+                            <div className={styles.guideStepBody}>
+                              <p>{sentence.endsWith('.') ? sentence : `${sentence}.`}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {/* Tip callout */}
+                      <div className={styles.tipBox}>
+                        <span className={styles.tipIcon}>💡</span>
+                        <p><strong>Try it yourself:</strong> Open Canvas in another tab and follow along with these steps. Learning by doing is the fastest way to build confidence.</p>
+                      </div>
                       {/* Presigned video */}
                       {assets.videos[0] && (
                         <video className={styles.video} controls src={assets.videos[0].url}>

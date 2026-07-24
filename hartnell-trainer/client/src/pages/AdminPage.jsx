@@ -475,7 +475,7 @@ export default function AdminPage() {
                   </button>
                 </div>
                 <div className={styles.publishRow}>
-                  <span>Publish modules to faculty</span>
+                  <span>Publish modules to learners</span>
                   <label className={styles.toggle}>
                     <input type="checkbox" checked={published} onChange={e => handlePublish(e.target.checked)} />
                     <span className={styles.slider} />
@@ -490,7 +490,7 @@ export default function AdminPage() {
                     <li>Drop PDF, DOCX, PPTX, or TXT files above.</li>
                     <li>Click <strong>Generate Modules</strong> — files upload to S3 and Claude AI builds interactive lessons.</li>
                     <li>Review the generated modules in the <strong>Generated Modules</strong> tab.</li>
-                    <li>Toggle <strong>Publish</strong> to make them live for faculty.</li>
+                    <li>Toggle <strong>Publish</strong> to make them live for learners.</li>
                   </ol>
                 </div>
               </div>

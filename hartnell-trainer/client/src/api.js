@@ -23,7 +23,20 @@ export const fetchProgress  = (userId)  => api.get(`/api/progress/${userId}`);
 export const updateProgress = (payload) => api.post('/api/progress/update', payload);
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
-export const sendChat = (messages, context) => api.post('/api/chat', { messages, context });
+// Calls the Panther Bedrock Knowledge Base via API Gateway directly
+export const sendChat = async (messages, context) => {
+  const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+  const userText = lastUserMsg?.content || '';
+
+  const res = await fetch('https://9alic6z3ej.execute-api.us-west-2.amazonaws.com/panther-chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: userText }),
+  });
+
+  const data = await res.json();
+  return { data: { reply: { role: 'assistant', content: data.answer || "I couldn't find an answer." } } };
+};
 
 // ── Upload pipeline ───────────────────────────────────────────────────────────
 // Step 1a: get a presigned S3 PUT URL (AWS) or a local key (local-dev)

@@ -5,10 +5,10 @@ const router  = express.Router();
 // Demo users — replace with real DB lookup + bcrypt in production
 const USERS = [
   { id: '1', name: 'Admin Owner',        email: 'admin@hartnell.edu',     password: 'admin123',   role: 'admin' },
-  { id: '2', name: 'Dr. Maria Santos',   email: 'm.santos@hartnell.edu',  password: 'faculty123', role: 'faculty' },
-  { id: '3', name: 'Prof. James Okafor', email: 'j.okafor@hartnell.edu',  password: 'faculty123', role: 'faculty' },
-  { id: '4', name: 'Dr. Linda Cheng',    email: 'l.cheng@hartnell.edu',   password: 'faculty123', role: 'faculty' },
-  { id: '5', name: 'Prof. Ahmed Yusuf',  email: 'a.yusuf@hartnell.edu',   password: 'faculty123', role: 'faculty' },
+  { id: '2', name: 'Dr. Maria Santos',   email: 'm.santos@hartnell.edu',  password: 'learner123', role: 'faculty' },
+  { id: '3', name: 'Prof. James Okafor', email: 'j.okafor@hartnell.edu',  password: 'learner123', role: 'faculty' },
+  { id: '4', name: 'Dr. Linda Cheng',    email: 'l.cheng@hartnell.edu',   password: 'learner123', role: 'faculty' },
+  { id: '5', name: 'Prof. Ahmed Yusuf',  email: 'a.yusuf@hartnell.edu',   password: 'learner123', role: 'faculty' },
 ];
 
 // API Gateway base URL — same endpoint Amir's progress Lambdas are deployed under
