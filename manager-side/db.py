@@ -433,3 +433,235 @@ def batch_delete_employees(user_ids):
             batch.delete_item(Key={"userId": user_id})
             count += 1
     return count
+
+
+# ============================================================
+# RISK SCORE & ANOMALY DETECTION
+# ============================================================
+
+def calculate_risk_score(user_id):
+    """
+    Calculate a risk score (0-100) per professor combining:
+    - Days inactive (0-30 pts)
+    - Completion rate inverse (0-25 pts)
+    - Failed checks / warnings (0-25 pts)
+    - Deadline proximity (0-20 pts)
+
+    Higher = more risk. Color coding:
+    0-30: green (low risk)
+    31-60: yellow (medium risk)
+    61-100: red (high risk)
+    """
+    item = get_employee_progress(user_id)
+    if not item:
+        return {"score": 0, "level": "unknown", "breakdown": {}}
+
+    modules = item.get("modules", {})
+    tracking = item.get("managerTracking", {})
+    now = datetime.utcnow()
+
+    # --- Days Inactive (0-30 pts) ---
+    last_activity = None
+    for mod_data in tracking.values():
+        lu = mod_data.get("last_updated", "")
+        if lu:
+            try:
+                dt = datetime.fromisoformat(lu)
+                if not last_activity or dt > last_activity:
+                    last_activity = dt
+            except (ValueError, TypeError):
+                pass
+
+    if last_activity:
+        days_inactive = (now - last_activity).days
+        inactive_score = min(days_inactive * 3, 30)  # 10 days = max
+    else:
+        inactive_score = 30  # No activity at all
+
+    # --- Completion Rate Inverse (0-25 pts) ---
+    total_modules = len(modules) if modules else len(MODULE_ORDER)
+    completed = sum(1 for m in modules.values() if m.get("completedAt"))
+    completion_rate = completed / max(total_modules, 1)
+    completion_score = round((1 - completion_rate) * 25)
+
+    # --- Failed Checks / Warnings (0-25 pts) ---
+    total_alerts = 0
+    for mod_data in tracking.values():
+        total_alerts += int(mod_data.get("alert_count", "0"))
+    alert_score = min(total_alerts * 5, 25)  # 5 alerts = max
+
+    # --- Deadline Proximity (0-20 pts) ---
+    deadline_score = 0
+    for mod_data in tracking.values():
+        if mod_data.get("progress") == "completed":
+            continue
+        lu = mod_data.get("last_updated", "")
+        if lu:
+            try:
+                start = datetime.fromisoformat(lu)
+                deadline = start + timedelta(days=MODULE_DEADLINE_DAYS)
+                days_left = (deadline - now).days
+                if days_left < 0:
+                    deadline_score = 20  # Overdue = max
+                    break
+                elif days_left <= 1:
+                    deadline_score = max(deadline_score, 18)
+                elif days_left <= 3:
+                    deadline_score = max(deadline_score, 12)
+                elif days_left <= 7:
+                    deadline_score = max(deadline_score, 6)
+            except (ValueError, TypeError):
+                pass
+
+    # --- Total ---
+    total_score = inactive_score + completion_score + alert_score + deadline_score
+    total_score = min(total_score, 100)
+
+    if total_score <= 30:
+        level = "low"
+    elif total_score <= 60:
+        level = "medium"
+    else:
+        level = "high"
+
+    return {
+        "userId": user_id,
+        "score": total_score,
+        "level": level,
+        "breakdown": {
+            "inactive": inactive_score,
+            "completion": completion_score,
+            "alerts": alert_score,
+            "deadline": deadline_score,
+        }
+    }
+
+
+def get_all_risk_scores():
+    """Calculate risk scores for all professors."""
+    all_items = get_all_employees()
+    scores = []
+    for item in all_items:
+        user_id = item.get("userId", "")
+        if user_id:
+            score = calculate_risk_score(user_id)
+            scores.append(score)
+    # Sort by score descending (highest risk first)
+    scores.sort(key=lambda x: x["score"], reverse=True)
+    return scores
+
+
+def detect_anomalies():
+    """
+    Behavioral anomaly detection (rules-based):
+    - Completed multiple modules too fast
+    - Quiz submitted in < 30 seconds
+    - Identical answers to a colleague
+    - Completed 8+ modules in < 30 minutes total
+    """
+    all_items = get_all_employees()
+    anomalies = []
+
+    # Collect all answer patterns for duplicate detection
+    answer_patterns = {}
+
+    for item in all_items:
+        user_id = item.get("userId", "")
+        tracking = item.get("managerTracking", {})
+        modules = item.get("modules", {})
+        total_seconds = int(item.get("totalSeconds", 0))
+
+        # Rule 1: Multiple modules completed too fast (< 5 min each)
+        fast_completions = []
+        for mod_name, mod_data in tracking.items():
+            time_spent = float(mod_data.get("time_spent", "0"))
+            if time_spent > 0 and time_spent < FAST_THRESHOLD and mod_data.get("progress") == "completed":
+                fast_completions.append(mod_name)
+
+        if len(fast_completions) >= 2:
+            anomalies.append({
+                "userId": user_id,
+                "type": "speed_anomaly",
+                "severity": "high" if len(fast_completions) >= 3 else "medium",
+                "detail": f"Completed {len(fast_completions)} modules in under {FAST_THRESHOLD} min each: {', '.join(fast_completions)}",
+            })
+
+        # Rule 2: Total time absurdly low for completions
+        completed_count = sum(1 for m in modules.values() if m.get("completedAt"))
+        if completed_count >= 3 and total_seconds < 900:  # 3+ modules in < 15 min total
+            anomalies.append({
+                "userId": user_id,
+                "type": "bulk_speed_anomaly",
+                "severity": "high",
+                "detail": f"Completed {completed_count} modules in only {round(total_seconds/60)} minutes total",
+            })
+
+        # Rule 3: Collect verification answers for duplicate detection
+        for mod_name, mod_data in tracking.items():
+            answer = mod_data.get("verification_answer", "")
+            if answer:
+                key = f"{mod_name}:{answer}"
+                if key not in answer_patterns:
+                    answer_patterns[key] = []
+                answer_patterns[key].append(user_id)
+
+    # Rule 4: Identical answers between users
+    for key, users in answer_patterns.items():
+        if len(users) >= 2:
+            mod_name = key.split(":")[0]
+            anomalies.append({
+                "userId": ", ".join(users),
+                "type": "duplicate_answers",
+                "severity": "medium",
+                "detail": f"Identical answers on '{mod_name}' from: {', '.join(users)}",
+            })
+
+    return anomalies
+
+
+def get_dropoff_alerts():
+    """
+    Find professors who started but stopped engaging.
+    Inactive for 3+ days with incomplete modules.
+    """
+    all_items = get_all_employees()
+    alerts = []
+    now = datetime.utcnow()
+
+    for item in all_items:
+        user_id = item.get("userId", "")
+        modules = item.get("modules", {})
+        tracking = item.get("managerTracking", {})
+
+        # Check if they have incomplete modules
+        has_incomplete = any(not m.get("completedAt") for m in modules.values())
+        if not has_incomplete:
+            continue
+
+        # Find last activity
+        last_activity = None
+        for mod_data in tracking.values():
+            lu = mod_data.get("last_updated", "")
+            if lu:
+                try:
+                    dt = datetime.fromisoformat(lu)
+                    if not last_activity or dt > last_activity:
+                        last_activity = dt
+                except (ValueError, TypeError):
+                    pass
+
+        if last_activity:
+            days_since = (now - last_activity).days
+            if days_since >= 3:
+                completed = sum(1 for m in modules.values() if m.get("completedAt"))
+                total = len(modules)
+                alerts.append({
+                    "userId": user_id,
+                    "days_inactive": days_since,
+                    "progress": f"{completed}/{total} modules",
+                    "last_active": last_activity.isoformat(),
+                    "urgency": "high" if days_since >= 7 else "medium",
+                })
+
+    alerts.sort(key=lambda x: x["days_inactive"], reverse=True)
+    return alerts

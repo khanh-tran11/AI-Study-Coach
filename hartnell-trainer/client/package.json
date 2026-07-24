@@ -1,0 +1,41 @@
+{
+  "name": "hartnell-trainer-client",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "axios": "^1.7.2",
+    "framer-motion": "^11.3.2",
+    "react": "^18.3.1",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.25.1",
+    "react-scripts": "5.0.1",
+    "uuid": "^10.0.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  },
+  "proxy": "http://localhost:4000",
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version"
+    ]
+  },
+  "devDependencies": {
+    "eslint-plugin-react-hooks": "^4.6.2"
+  },
+  "eslintConfig": {
+    "extends": ["react-app", "react-app/jest"],
+    "plugins": ["react-hooks"],
+    "rules": {
+      "react-hooks/exhaustive-deps": "warn"
+    }
+  }
+}

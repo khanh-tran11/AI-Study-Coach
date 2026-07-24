@@ -19,9 +19,21 @@ from db import (
     get_deadline_warnings,
     can_access_module,
     get_module_order,
+    get_all_risk_scores,
+    calculate_risk_score,
+    detect_anomalies,
+    get_dropoff_alerts,
 )
 from questions import get_challenge_question, get_warning_gif
 from ai_summary import generate_summary, generate_personalized_feedback, draft_manager_email
+from learner_features import (
+    get_scenario,
+    evaluate_scenario_choice,
+    generate_violation_game,
+    ai_debate,
+    calculate_time_gate,
+    check_time_gate,
+)
 
 app = Flask(__name__)
 app.secret_key = "ai-trainer-secret-key-2024"
@@ -145,6 +157,51 @@ def alerts():
 def deadlines():
     data = get_deadline_warnings()
     return jsonify(data)
+
+
+# GET /manager/risk-scores - Risk score per professor (0-100)
+@app.route("/manager/risk-scores", methods=["GET"])
+@login_required
+def risk_scores():
+    data = get_all_risk_scores()
+    return jsonify(data)
+
+
+# GET /manager/risk-scores/<user_id> - Single professor risk score
+@app.route("/manager/risk-scores/<user_id>", methods=["GET"])
+@login_required
+def single_risk_score(user_id):
+    data = calculate_risk_score(user_id)
+    return jsonify(data)
+
+
+# GET /manager/anomalies - Behavioral anomaly detection
+@app.route("/manager/anomalies", methods=["GET"])
+@login_required
+def anomalies():
+    data = detect_anomalies()
+    return jsonify(data)
+
+
+# GET /manager/dropoff-alerts - Engagement drop-off alerts
+@app.route("/manager/dropoff-alerts", methods=["GET"])
+@login_required
+def dropoff_alerts():
+    data = get_dropoff_alerts()
+    return jsonify(data)
+
+
+# POST /manager/nudge-email/<user_id> - AI-drafted nudge email for drop-off
+@app.route("/manager/nudge-email/<user_id>", methods=["POST"])
+@login_required
+def nudge_email(user_id):
+    item = get_employee_progress(user_id)
+    modules = item.get("modules", {})
+    completed = sum(1 for m in modules.values() if m.get("completedAt"))
+    total = len(modules)
+    context = f"Professor has completed {completed}/{total} modules and has been inactive."
+    email = draft_manager_email(user_id, "training modules", "encouragement", context)
+    return jsonify({"email": email, "userId": user_id})
 
 
 # GET /manager/ai-summary - AI-generated summary of all employee data
@@ -323,6 +380,67 @@ def verify_answer(user_id, module):
             "gif": gif_data["gif"],
             "gif_caption": gif_data["caption"],
         })
+
+
+# ============================================================
+# LEARNER-SIDE ROUTES
+# ============================================================
+
+# GET /learner/scenario/<module> - Get a scenario simulation
+@app.route("/learner/scenario/<module>", methods=["GET"])
+def learner_scenario(module):
+    scenario = get_scenario(module)
+    if not scenario:
+        return jsonify({"error": "No scenario available for this module"}), 404
+    return jsonify(scenario)
+
+
+# POST /learner/scenario/evaluate - Evaluate scenario choice
+@app.route("/learner/scenario/evaluate", methods=["POST"])
+def learner_scenario_evaluate():
+    body = request.get_json()
+    scenario_id = body.get("scenario_id")
+    choice_id = body.get("choice_id")
+    choices = body.get("choices", [])
+    result = evaluate_scenario_choice(scenario_id, choice_id, choices)
+    return jsonify(result)
+
+
+# GET /learner/violation-game - Get a Spot-the-Violation game
+@app.route("/learner/violation-game", methods=["GET"])
+def learner_violation_game():
+    game = generate_violation_game()
+    return jsonify(game)
+
+
+# POST /learner/debate - AI Debate Partner
+@app.route("/learner/debate", methods=["POST"])
+def learner_debate():
+    body = request.get_json()
+    module = body.get("module", "Intro to AI")
+    statement = body.get("statement", "")
+    history = body.get("history", [])
+    if not statement:
+        return jsonify({"error": "Statement is required"}), 400
+    result = ai_debate(module, statement, history)
+    return jsonify(result)
+
+
+# GET /learner/time-gate/<module> - Get time gate info for a module
+@app.route("/learner/time-gate/<module>", methods=["GET"])
+def learner_time_gate(module):
+    gate = calculate_time_gate(module)
+    return jsonify(gate)
+
+
+# POST /learner/time-gate/check - Check if time gate is unlocked
+@app.route("/learner/time-gate/check", methods=["POST"])
+def learner_time_gate_check():
+    body = request.get_json()
+    module = body.get("module", "")
+    time_spent = int(body.get("time_spent_seconds", 0))
+    result = check_time_gate(module, time_spent)
+    return jsonify(result)
 
 
 if __name__ == "__main__":

@@ -23,10 +23,11 @@ Use emojis, be conversational, and make it feel like a quick team standup briefi
 1. 🎯 **Team Pulse** - Quick vibe check on overall progress (use percentages, be encouraging)
 2. 🌟 **Stars of the Week** - Highlight top performers with specific praise
 3. 🚨 **Heads Up** - Who needs attention (be specific about why)
-4. 📊 **Module Breakdown** - Which modules are easy vs. hard for the team
-5. 💡 **Your Move** - 2-3 specific, actionable things the manager should do TODAY
+4. 📊 **Module Breakdown** - Which modules are easy vs. hard for the team (mention first-attempt fail rates)
+5. 💡 **Your Move** - 3 specific, actionable things the manager should do TODAY (e.g., "Send check-in to Prof X who failed Grade Policy 3 times", "Review Module 4 — 60% first-attempt fail rate suggests content issue")
+6. 📈 **Risk Summary** - How many are low/medium/high risk. Flag anyone above 70.
 
-Keep it under 300 words. Be direct, friendly, and slightly humorous where appropriate. No corporate jargon.
+Format as a Monday morning briefing email. Keep it under 300 words. Be direct, friendly, and slightly humorous where appropriate. No corporate jargon.
 
 Data:
 {data_text}"""
