@@ -1,0 +1,53 @@
+.wrapper { display:flex; flex-direction:column; gap:12px; }
+
+.instruction { font-size:0.85rem; color:var(--text-light); font-style:italic; }
+
+.progress { height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+.progressFill { height:100%; background:var(--hc-magenta); border-radius:3px; transition:width 0.4s ease; }
+.progressLabel { font-size:0.78rem; color:var(--text-light); font-weight:600; }
+
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.col  { display:flex; flex-direction:column; gap:8px; }
+
+.cell {
+  padding:13px 14px;
+  border-radius:var(--radius);
+  border:2px solid var(--border);
+  background:var(--surface);
+  font-size:0.88rem; font-weight:600;
+  text-align:left; cursor:pointer;
+  transition:all 0.15s;
+  color:var(--text);
+  position:relative;
+  min-height:54px;
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+}
+
+.right { text-align:right; justify-content:flex-end; }
+
+.cell:hover:not(:disabled) { border-color:var(--hc-magenta); background:#fdf4f7; }
+
+/* States */
+.cell.selected { border-color:var(--hc-magenta); background:#fdf4f7; box-shadow:0 0 0 3px rgba(134,0,56,0.15); }
+.cell.matched  { border-color:var(--success); background:#edfbf1; color:var(--success); cursor:default; opacity:0.85; }
+.cell.wrong    { border-color:var(--error); background:#fff0ef; animation:shake 0.35s ease; }
+
+@keyframes shake {
+  0%,100% { transform:translateX(0); }
+  25%      { transform:translateX(-5px); }
+  75%      { transform:translateX(5px); }
+}
+
+.check { font-size:1rem; color:var(--success); flex-shrink:0; }
+
+/* Done */
+.done { text-align:center; padding:40px 20px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.doneIcon { font-size:3rem; }
+.done h3 { font-size:1.2rem; font-weight:800; color:var(--hc-magenta); }
+.done p  { font-size:0.9rem; color:var(--text-light); }
+.btnPrimary {
+  padding:11px 28px; background:var(--hc-magenta); color:#fff;
+  border:none; border-radius:var(--radius); font-weight:700; font-size:0.9rem;
+  transition:background 0.18s; margin-top:8px;
+}
+.btnPrimary:hover { background:var(--hc-burgundy); }

@@ -1,0 +1,257 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Hartnell College AI Trainer — Lambda + API Gateway + DynamoDB
+
+# ── Global defaults applied to every Lambda function ──────────────────────────
+Globals:
+  Function:
+    Runtime:      nodejs20.x
+    Architectures: [arm64]          # Graviton — cheaper + faster cold starts
+    Timeout:      29                 # API GW max is 29 s
+    MemorySize:   256
+    Environment:
+      Variables:
+        AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
+        FRONTEND_ORIGIN: !Sub 'https://${AmplifyApp}.amplifyapp.com'
+        S3_BUCKET_NAME:  !Ref TrainingBucket
+        PROGRESS_TABLE:  !Ref ProgressTable
+        OPENAI_MODEL:    gpt-4o-mini
+        # OPENAI_API_KEY — set via Parameter Store / Secrets Manager (see below)
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'Content-Type,Authorization'"
+      AllowOrigin:  "'*'"            # tightened to Amplify domain after first deploy
+
+# ── Parameters (fill in before deploying) ─────────────────────────────────────
+Parameters:
+  OpenAIApiKey:
+    Type:        String
+    NoEcho:      true
+    Description: OpenAI API key — stored as a SecureString in SSM Parameter Store
+  AmplifyAppId:
+    Type:        String
+    Default:     placeholder
+    Description: Amplify App ID (update after Amplify app is created)
+
+# ── Resources ──────────────────────────────────────────────────────────────────
+Resources:
+
+  # ── S3 bucket for training materials ────────────────────────────────────────
+  TrainingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'hartnell-trainer-assets-${AWS::AccountId}'
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins: ['*']
+            AllowedMethods: [GET]
+            AllowedHeaders: ['*']
+            MaxAge: 3600
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls:       true
+        BlockPublicPolicy:     true
+        IgnorePublicAcls:      true
+        RestrictPublicBuckets: true
+
+  # ── DynamoDB table for progress tracking ────────────────────────────────────
+  ProgressTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: HartnellProgress
+      BillingMode: PAY_PER_REQUEST    # no capacity planning needed
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  # ── API Gateway (HTTP API — lower cost than REST API) ────────────────────────
+  HartnellApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: prod
+      CorsConfiguration:
+        AllowOrigins:
+          - '*'
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+
+  # ── Lambda: Auth ─────────────────────────────────────────────────────────────
+  AuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: hartnell-auth
+      CodeUri:      lambda/auth/
+      Handler:      index.handler
+      Description:  POST /auth/login and /auth/logout
+      Events:
+        Login:
+          Type:       HttpApi
+          Properties:
+            ApiId:  !Ref HartnellApi
+            Path:   /auth/login
+            Method: POST
+        Logout:
+          Type:       HttpApi
+          Properties:
+            ApiId:  !Ref HartnellApi
+            Path:   /auth/logout
+            Method: POST
+        Options:
+          Type:       HttpApi
+          Properties:
+            ApiId:  !Ref HartnellApi
+            Path:   /auth/{proxy+}
+            Method: OPTIONS
+
+  # ── Lambda: Training ─────────────────────────────────────────────────────────
+  TrainingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: hartnell-training
+      CodeUri:      lambda/training/
+      Handler:      index.handler
+      Description:  GET /training/{moduleId} — S3 fetch + presigned URLs
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref TrainingBucket
+      Events:
+        GetModule:
+          Type:       HttpApi
+          Properties:
+            ApiId:  !Ref HartnellApi
+            Path:   /training/{moduleId}
+            Method: GET
+        Options:
+          Type:       HttpApi
+          Properties:
+            ApiId:  !Ref HartnellApi
+            Path:   /training/{proxy+}
+            Method: OPTIONS
+
+  # ── Lambda: Progress ─────────────────────────────────────────────────────────
+  ProgressFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: hartnell-progress
+      CodeUri:      lambda/progress/
+      Handler:      index.handler
+      Description:  GET /progress/{userId}  POST /progress/update
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProgressTable
+      Events:
+        GetProgress:
+          Type:       HttpApi
+          Properties:
+            ApiId:  !Ref HartnellApi
+            Path:   /progress/{userId}
+            Method: GET
+        UpdateProgress:
+          Type:       HttpApi
+          Properties:
+            ApiId:  !Ref HartnellApi
+            Path:   /progress/update
+            Method: POST
+        Options:
+          Type:       HttpApi
+          Properties:
+            ApiId:  !Ref HartnellApi
+            Path:   /progress/{proxy+}
+            Method: OPTIONS
+
+  # ── Lambda: Chat ─────────────────────────────────────────────────────────────
+  ChatFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: hartnell-chat
+      CodeUri:      lambda/chat/
+      Handler:      index.handler
+      Description:  POST /chat — Panther AI via OpenAI
+      Timeout:      60              # LLM calls can be slow
+      MemorySize:   512
+      Environment:
+        Variables:
+          OPENAI_API_KEY: !Ref OpenAIApiKey
+      Events:
+        Chat:
+          Type:       HttpApi
+          Properties:
+            ApiId:  !Ref HartnellApi
+            Path:   /chat
+            Method: POST
+        Options:
+          Type:       HttpApi
+          Properties:
+            ApiId:  !Ref HartnellApi
+            Path:   /chat
+            Method: OPTIONS
+
+  # ── Amplify App (frontend hosting) ───────────────────────────────────────────
+  AmplifyApp:
+    Type: AWS::Amplify::App
+    Properties:
+      Name: hartnell-ai-trainer
+      Description: Hartnell College Canvas Faculty Onboarding
+      BuildSpec: |
+        version: 1
+        frontend:
+          phases:
+            preBuild:
+              commands:
+                - cd hartnell-trainer
+                - npm ci
+            build:
+              commands:
+                - npm run build
+          artifacts:
+            baseDirectory: hartnell-trainer/build
+            files:
+              - '**/*'
+          cache:
+            paths:
+              - hartnell-trainer/node_modules/**/*
+      CustomRules:
+        - Source: '</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json)$)([^.]+$)/>'
+          Target: /index.html
+          Status: '200'    # SPA fallback — all routes serve index.html
+
+  AmplifyBranch:
+    Type: AWS::Amplify::Branch
+    Properties:
+      AppId:      !GetAtt AmplifyApp.AppId
+      BranchName: main
+      Stage:      PRODUCTION
+      EnableAutoBuild: true
+      EnvironmentVariables:
+        - Name:  REACT_APP_API_URL
+          Value: !Sub 'https://${HartnellApi}.execute-api.${AWS::Region}.amazonaws.com/prod'
+
+# ── Outputs ───────────────────────────────────────────────────────────────────
+Outputs:
+  ApiUrl:
+    Description: API Gateway base URL — paste into REACT_APP_API_URL
+    Value:        !Sub 'https://${HartnellApi}.execute-api.${AWS::Region}.amazonaws.com/prod'
+    Export:
+      Name: HartnellApiUrl
+
+  TrainingBucketName:
+    Description: S3 bucket for training materials
+    Value:        !Ref TrainingBucket
+
+  ProgressTableName:
+    Description: DynamoDB table for progress
+    Value:        !Ref ProgressTable
+
+  AmplifyAppUrl:
+    Description: Amplify hosted frontend URL
+    Value:        !Sub 'https://main.${AmplifyApp.DefaultDomain}'
