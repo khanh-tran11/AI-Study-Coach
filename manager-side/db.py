@@ -1,421 +1,533 @@
+"""
+manager-side/db.py
+
+DynamoDB access layer for the manager Flask dashboard.
+
+Reads from the SAME table as Amir's progress Lambdas:
+  canvas-ai-trainer-module-progress  (us-west-2)
+
+Schema (one row per user per module)
+─────────────────────────────────────
+PK  userId      string   – auth.js IDs "1"…"5"
+SK  moduleId    string   – "1"…"10"
+
+Admin-visible fields written by the progress Lambda:
+  moduleName            human-readable title
+  name                  learner display name
+  email                 learner email
+  progress              "not_started" | "in_progress" | "completed"
+  steps                 map of stepId → {status, updatedAt}
+  timeSpentSeconds      cumulative seconds
+  completedAt           ISO timestamp or null
+  lastActiveAt          ISO timestamp of last step touch
+  firstLoginAt          ISO timestamp of first ever activity
+  alert_count           int – fast-completion warnings
+  alert_status          "normal" | "warning" | "cheating_reported"
+  locked                bool
+  verification_status   "none" | "pending" | "passed" | "failed"
+  contact_requested     bool
+  contact_message       string
+
+GSI  moduleId-progress-index  on (moduleId, progress)
+     – used by get_employees_by_module()
+"""
+
+import os
+from datetime import datetime, timedelta
+from decimal import Decimal
+
 import boto3
 from boto3.dynamodb.conditions import Key
-from datetime import datetime, timedelta
 
-# Connect to DynamoDB - region us-west-2 (Oregon)
-dynamodb = boto3.resource("dynamodb", region_name="us-west-2")
-table = dynamodb.Table("AITrainerProgress")
+# ── Config ────────────────────────────────────────────────────────────────────
+TABLE_NAME   = os.environ.get("PROGRESS_TABLE_NAME", "canvas-ai-trainer-module-progress")
+AWS_REGION   = os.environ.get("AWS_REGION", "us-west-2")
 
-# Average expected time per module (in minutes)
-EXPECTED_MODULE_TIME = 30
-# Threshold for "too fast" (in minutes)
-FAST_THRESHOLD = 5
-# Max warnings before reporting cheating
-MAX_WARNINGS = 3
-# Deadline: days allowed to complete each module
-MODULE_DEADLINE_DAYS = 7
+EXPECTED_MODULE_TIME   = 30   # minutes – used for analytics comparison
+FAST_THRESHOLD         = 5    # minutes – below this is suspicious
+MAX_WARNINGS           = 3    # warnings before cheating_reported
+MODULE_DEADLINE_DAYS   = 7    # days allowed per module
 
-# Module order - must complete in sequence
+# Canonical order – must match Carlos's TrainingPage.jsx MODULE_TITLES
 MODULE_ORDER = [
-    "Intro to AI",
-    "Data Basics",
-    "Machine Learning",
+    "Canvas Orientation",
+    "Setting Up Your Shell",
+    "Course Content Upload",
+    "Assignments & Quizzes",
+    "Gradebook & Exports",
+    "Communication Tools",
+    "Accessibility Standards",
+    "Student View & Testing",
+    "LMS Admin Intro",
+    "Capstone & Certification",
 ]
 
+# Map title → moduleId string (for cross-referencing with SK)
+MODULE_TITLE_TO_ID = {title: str(i + 1) for i, title in enumerate(MODULE_ORDER)}
+MODULE_ID_TO_TITLE = {str(i + 1): title for i, title in enumerate(MODULE_ORDER)}
 
-def get_all_employees():
-    """Get all employee progress records."""
+# ── DynamoDB client ───────────────────────────────────────────────────────────
+dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
+table    = dynamodb.Table(TABLE_NAME)
+
+
+# ── Internal helpers ──────────────────────────────────────────────────────────
+def _now_iso() -> str:
+    return datetime.utcnow().isoformat()
+
+
+def _to_float(value) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _to_int(value) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _normalise_row(item: dict) -> dict:
+    """
+    Ensure every admin-visible field exists with a safe default so the
+    dashboard templates never need to guard against missing keys.
+    Also converts Decimal → float/int for JSON serialisation.
+    """
+    item.setdefault("moduleName",          MODULE_ID_TO_TITLE.get(str(item.get("moduleId", "")), "Unknown"))
+    item.setdefault("name",                "Unknown")
+    item.setdefault("email",               "")
+    item.setdefault("progress",            "not_started")
+    item.setdefault("steps",               {})
+    item.setdefault("completedAt",         None)
+    item.setdefault("lastActiveAt",        None)
+    item.setdefault("firstLoginAt",        None)
+    item.setdefault("alert_count",         0)
+    item.setdefault("alert_status",        "normal")
+    item.setdefault("locked",              False)
+    item.setdefault("verification_status", "none")
+    item.setdefault("contact_requested",   False)
+    item.setdefault("contact_message",     "")
+
+    # Convert Decimal fields so Flask's jsonify doesn't choke
+    item["timeSpentSeconds"] = _to_float(item.get("timeSpentSeconds", 0))
+    item["alert_count"]      = _to_int(item.get("alert_count", 0))
+
+    # Convenience alias for templates/dashboard that still use "time_spent" (minutes)
+    item["time_spent"] = round(item["timeSpentSeconds"] / 60, 1)
+
+    # Convenience alias: "module" = moduleName  (Khanh's dashboard uses "module" key)
+    item["module"] = item["moduleName"]
+
+    return item
+
+
+# ── Read ──────────────────────────────────────────────────────────────────────
+def get_all_employees() -> list[dict]:
+    """
+    Full table scan – returns every (userId, moduleId) row normalised.
+    The manager dashboard uses this to build its employee table.
+    """
     response = table.scan()
-    return response.get("Items", [])
+    rows = response.get("Items", [])
+
+    # Handle DynamoDB pagination
+    while "LastEvaluatedKey" in response:
+        response = table.scan(ExclusiveStartKey=response["LastEvaluatedKey"])
+        rows.extend(response.get("Items", []))
+
+    return [_normalise_row(r) for r in rows]
 
 
-def get_employee_progress(name):
-    """Get all modules for a specific employee."""
+def get_employee_progress(user_id: str) -> list[dict]:
+    """Return all module rows for one employee (query on PK)."""
     response = table.query(
-        KeyConditionExpression=Key("name").eq(name)
+        KeyConditionExpression=Key("userId").eq(user_id)
     )
-    return response.get("Items", [])
+    return [_normalise_row(r) for r in response.get("Items", [])]
 
 
-def get_employees_by_module(module_name, progress_filter=None):
+def get_employees_by_module(module_name: str, progress_filter: str = None) -> list[dict]:
     """
-    Query by module using GSI.
-    Finds all employees for a specific module.
-    Optionally filter by progress status.
+    Query via GSI moduleId-progress-index.
+    module_name is the human-readable title; we translate to moduleId for the query.
     """
+    module_id = MODULE_TITLE_TO_ID.get(module_name, module_name)
+
     if progress_filter:
         response = table.query(
-            IndexName="module-progress-index",
-            KeyConditionExpression=Key("module").eq(module_name) & Key("progress").eq(progress_filter)
+            IndexName="moduleId-progress-index",
+            KeyConditionExpression=(
+                Key("moduleId").eq(module_id) & Key("progress").eq(progress_filter)
+            ),
         )
     else:
         response = table.query(
-            IndexName="module-progress-index",
-            KeyConditionExpression=Key("module").eq(module_name)
+            IndexName="moduleId-progress-index",
+            KeyConditionExpression=Key("moduleId").eq(module_id),
         )
-    return response.get("Items", [])
+
+    return [_normalise_row(r) for r in response.get("Items", [])]
 
 
-def update_progress(name, module, status):
+# ── Write helpers ─────────────────────────────────────────────────────────────
+def _get_row(user_id: str, module_id: str) -> dict:
+    """Fetch a row; return an empty normalised dict if not found."""
+    response = table.get_item(Key={"userId": user_id, "moduleId": str(module_id)})
+    item = response.get("Item")
+    if item is None:
+        item = {"userId": user_id, "moduleId": str(module_id)}
+    return _normalise_row(item)
+
+
+def update_progress(user_id: str, module_id: str, status: str) -> None:
     """
-    Update an employee's module progress status.
-    Uses Conditional Write: cannot mark 'completed' if time_spent < 5 min.
-    This prevents cheating at the database level.
+    Manager manually sets a module's progress status.
+    Enforces the cheating guard: cannot set 'completed' if time < 5 min.
+    module_id can be a string ID ("1") or a module title – both are handled.
     """
+    # Accept title or numeric id
+    if not str(module_id).isdigit():
+        module_id = MODULE_TITLE_TO_ID.get(module_id, module_id)
+
     if status == "completed":
-        try:
-            # Conditional: only allow completion if time_spent >= 5 min
-            table.update_item(
-                Key={"name": name, "module": module},
-                UpdateExpression="SET progress = :s, last_updated = :t",
-                ConditionExpression="attribute_not_exists(time_spent) OR time_spent >= :min_time",
-                ExpressionAttributeValues={
-                    ":s": status,
-                    ":t": datetime.utcnow().isoformat(),
-                    ":min_time": "5",
-                }
-            )
-        except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+        row = _get_row(user_id, module_id)
+        time_minutes = row["time_spent"]
+        if time_minutes < FAST_THRESHOLD:
             raise ValueError(
-                f"Cannot mark '{module}' as completed for {name}. "
-                f"Time spent is less than 5 minutes. Possible cheating detected."
+                f"Cannot mark module {module_id} completed for user {user_id}: "
+                f"only {time_minutes:.1f} min spent (minimum {FAST_THRESHOLD} min)."
             )
-    else:
-        # No condition for other status changes (e.g., reset to in_progress)
-        table.update_item(
-            Key={"name": name, "module": module},
-            UpdateExpression="SET progress = :s, last_updated = :t",
-            ExpressionAttributeValues={
-                ":s": status,
-                ":t": datetime.utcnow().isoformat(),
-            }
-        )
+
+    table.update_item(
+        Key={"userId": user_id, "moduleId": str(module_id)},
+        UpdateExpression="SET progress = :s, lastActiveAt = :t",
+        ExpressionAttributeValues={
+            ":s": status,
+            ":t": _now_iso(),
+        },
+    )
 
 
-def update_time_spent(name, module, time_spent_minutes):
-    """Update time spent on a module and check for alerts."""
-    # Get current alert count
-    response = table.get_item(Key={"name": name, "module": module})
-    item = response.get("Item", {})
-    current_alerts = int(item.get("alert_count", 0))
+def update_time_spent(user_id: str, module_id: str, time_spent_minutes: float) -> dict:
+    """
+    Record time spent (in minutes) and run cheating detection.
+    Returns { alert_status, alert_count }.
+    """
+    if not str(module_id).isdigit():
+        module_id = MODULE_TITLE_TO_ID.get(module_id, module_id)
 
-    # Check if too fast
+    row           = _get_row(user_id, module_id)
+    current_count = row["alert_count"]
     is_suspicious = time_spent_minutes < FAST_THRESHOLD
-    new_alert_count = current_alerts + 1 if is_suspicious else current_alerts
+    new_count     = current_count + 1 if is_suspicious else current_count
 
-    # Determine alert level
-    if new_alert_count >= MAX_WARNINGS:
+    if new_count >= MAX_WARNINGS:
         alert_status = "cheating_reported"
-    elif is_suspicious:
+    elif new_count > 0:
         alert_status = "warning"
     else:
         alert_status = "normal"
 
+    time_seconds = Decimal(str(time_spent_minutes * 60))
+
     table.update_item(
-        Key={"name": name, "module": module},
+        Key={"userId": user_id, "moduleId": str(module_id)},
         UpdateExpression=(
-            "SET time_spent = :t, alert_count = :a, "
-            "alert_status = :s, last_updated = :u"
+            "SET timeSpentSeconds = :ts, alert_count = :ac, "
+            "alert_status = :as, lastActiveAt = :u"
         ),
         ExpressionAttributeValues={
-            ":t": str(time_spent_minutes),
-            ":a": str(new_alert_count),
-            ":s": alert_status,
-            ":u": datetime.utcnow().isoformat(),
-        }
+            ":ts": time_seconds,
+            ":ac": new_count,
+            ":as": alert_status,
+            ":u":  _now_iso(),
+        },
     )
-    return {"alert_status": alert_status, "alert_count": new_alert_count}
+    return {"alert_status": alert_status, "alert_count": new_count}
 
 
-def get_alerts():
-    """Get all employees with warnings or cheating reports."""
-    all_items = get_all_employees()
-    alerts = []
-    for item in all_items:
-        alert_count = int(item.get("alert_count", 0))
-        if alert_count > 0:
-            alerts.append(item)
-    return alerts
-
-
-def update_verification_status(name, module, status, answer_given=""):
+def record_login(user_id: str, name: str, email: str) -> None:
     """
-    Update verification status after challenge question.
-    status: 'passed', 'failed', 'pending'
-
-    On fail:
-      - Reset progress to 'in_progress' (send back to lecture)
-      - Increment alert_count
-      - If 3+ fails: lock employee (alert_status = 'locked') and report to manager
+    Called by the auth route when a user logs in.
+    Ensures every module row exists for this user with identity fields
+    populated and firstLoginAt set on the very first login.
+    Uses update_item with condition so firstLoginAt is only written once.
     """
-    update_expr = "SET verification_status = :vs, verification_answer = :va, last_updated = :u"
-    expr_values = {
-        ":vs": status,
-        ":va": answer_given,
-        ":u": datetime.utcnow().isoformat(),
-    }
+    now = _now_iso()
+    for module_id, module_name in MODULE_ID_TO_TITLE.items():
+        # Set identity + lastActiveAt on every login.
+        # firstLoginAt only written when the attribute doesn't exist yet.
+        table.update_item(
+            Key={"userId": user_id, "moduleId": module_id},
+            UpdateExpression=(
+                "SET #n = if_not_exists(#n, :name), "
+                "email = if_not_exists(email, :email), "
+                "moduleName = if_not_exists(moduleName, :mn), "
+                "progress = if_not_exists(progress, :ns), "
+                "firstLoginAt = if_not_exists(firstLoginAt, :now), "
+                "lastActiveAt = :now, "
+                "alert_count = if_not_exists(alert_count, :zero), "
+                "alert_status = if_not_exists(alert_status, :normal), "
+                "locked = if_not_exists(locked, :false), "
+                "verification_status = if_not_exists(verification_status, :none), "
+                "contact_requested = if_not_exists(contact_requested, :false)"
+            ),
+            ExpressionAttributeNames={"#n": "name"},
+            ExpressionAttributeValues={
+                ":name":   name,
+                ":email":  email,
+                ":mn":     module_name,
+                ":ns":     "not_started",
+                ":now":    now,
+                ":zero":   0,
+                ":normal": "normal",
+                ":false":  False,
+                ":none":   "none",
+            },
+        )
+
+
+def update_verification_status(user_id: str, module_id: str,
+                                status: str, answer_given: str = "") -> dict:
+    """
+    Record the result of a challenge question.
+    On 'failed': reset progress → in_progress, increment alert_count.
+    On 3+ failures: lock the employee and report cheating.
+    """
+    if not str(module_id).isdigit():
+        module_id = MODULE_TITLE_TO_ID.get(module_id, module_id)
+
+    now = _now_iso()
+    update_expr   = "SET verification_status = :vs, lastActiveAt = :u"
+    expr_values   = {":vs": status, ":u": now}
 
     if status == "failed":
-        # Reset progress back to in_progress (return to lecture)
-        update_expr += ", progress = :prog, alert_count = alert_count + :one"
-        expr_values[":prog"] = "in_progress"
-        expr_values[":one"] = 1
+        row           = _get_row(user_id, module_id)
+        new_count     = row["alert_count"] + 1
+        alert_status  = "cheating_reported" if new_count >= MAX_WARNINGS else "warning"
+        locked        = new_count >= MAX_WARNINGS
 
-        # Check if should lock and report
-        response = table.get_item(Key={"name": name, "module": module})
-        item = response.get("Item", {})
-        current_alerts = int(item.get("alert_count", 0))
+        update_expr += (
+            ", progress = :prog, alert_count = :ac, "
+            "alert_status = :as, locked = :locked"
+        )
+        expr_values.update({
+            ":prog":   "in_progress",
+            ":ac":     new_count,
+            ":as":     alert_status,
+            ":locked": locked,
+        })
 
-        if current_alerts + 1 >= MAX_WARNINGS:
-            # Lock the employee and report to manager
-            update_expr += ", alert_status = :as, locked = :locked"
-            expr_values[":as"] = "cheating_reported"
-            expr_values[":locked"] = "true"
-        else:
-            update_expr += ", alert_status = :as"
-            expr_values[":as"] = "warning"
+        table.update_item(
+            Key={"userId": user_id, "moduleId": str(module_id)},
+            UpdateExpression=update_expr,
+            ExpressionAttributeValues=expr_values,
+        )
+        return {"locked": locked, "alert_count": new_count}
 
+    # passed
     table.update_item(
-        Key={"name": name, "module": module},
+        Key={"userId": user_id, "moduleId": str(module_id)},
         UpdateExpression=update_expr,
         ExpressionAttributeValues=expr_values,
     )
-
-    # Return result info
-    if status == "failed":
-        response = table.get_item(Key={"name": name, "module": module})
-        item = response.get("Item", {})
-        return {
-            "locked": item.get("locked") == "true",
-            "alert_count": int(item.get("alert_count", 0)),
-        }
     return {"locked": False, "alert_count": 0}
 
 
-def get_cheating_reports():
-    """Get employees flagged as cheating (3+ fast completions)."""
-    all_items = get_all_employees()
-    reports = []
-    for item in all_items:
-        if item.get("alert_status") == "cheating_reported":
-            reports.append(item)
-    return reports
+def unlock_employee(user_id: str, module_id: str) -> None:
+    """Manager resets a locked employee so they can redo the module."""
+    if not str(module_id).isdigit():
+        module_id = MODULE_TITLE_TO_ID.get(module_id, module_id)
 
-
-def submit_contact_request(name, module, message=""):
-    """
-    Employee self-reports to manager requesting to redo assignment.
-    Stores the contact request in DynamoDB.
-    """
     table.update_item(
-        Key={"name": name, "module": module},
+        Key={"userId": user_id, "moduleId": str(module_id)},
         UpdateExpression=(
-            "SET contact_requested = :cr, contact_message = :msg, "
-            "contact_time = :ct, last_updated = :u"
+            "SET locked = :f, alert_status = :n, progress = :p, "
+            "contact_requested = :f, alert_count = :zero, lastActiveAt = :t"
         ),
         ExpressionAttributeValues={
-            ":cr": "true",
-            ":msg": message or "I would like to redo this assignment. Please unlock my access.",
-            ":ct": datetime.utcnow().isoformat(),
-            ":u": datetime.utcnow().isoformat(),
-        }
+            ":f":    False,
+            ":n":    "normal",
+            ":p":    "in_progress",
+            ":zero": 0,
+            ":t":    _now_iso(),
+        },
     )
 
 
-def get_contact_requests():
-    """Get all employees who have submitted contact requests."""
-    all_items = get_all_employees()
-    requests = []
-    for item in all_items:
-        if item.get("contact_requested") == "true":
-            requests.append(item)
-    return requests
+def submit_contact_request(user_id: str, module_id: str, message: str = "") -> None:
+    """Employee self-reports and asks the manager to review their case."""
+    if not str(module_id).isdigit():
+        module_id = MODULE_TITLE_TO_ID.get(module_id, module_id)
 
-
-def unlock_employee(name, module):
-    """Manager unlocks an employee after reviewing their contact request."""
     table.update_item(
-        Key={"name": name, "module": module},
+        Key={"userId": user_id, "moduleId": str(module_id)},
         UpdateExpression=(
-            "SET locked = :l, alert_status = :as, progress = :p, "
-            "contact_requested = :cr, alert_count = :ac, last_updated = :u"
+            "SET contact_requested = :t, contact_message = :msg, lastActiveAt = :u"
         ),
         ExpressionAttributeValues={
-            ":l": "false",
-            ":as": "normal",
-            ":p": "in_progress",
-            ":cr": "false",
-            ":ac": "0",
-            ":u": datetime.utcnow().isoformat(),
-        }
+            ":t":   True,
+            ":msg": message or "I would like to redo this assignment.",
+            ":u":   _now_iso(),
+        },
     )
 
 
-def get_analytics():
-    """Get module analytics - time spent per module per employee."""
-    all_items = get_all_employees()
-    analytics = {}
-    for item in all_items:
-        module = item.get("module", "Unknown")
-        time_spent = float(item.get("time_spent", 0))
-        if module not in analytics:
-            analytics[module] = {"times": [], "employees": []}
-        analytics[module]["times"].append(time_spent)
-        analytics[module]["employees"].append(item.get("name", "Unknown"))
-    # Calculate averages
-    result = []
-    for module, data in analytics.items():
-        times = data["times"]
-        avg = sum(times) / len(times) if times else 0
-        result.append({
-            "module": module,
-            "avg_time": round(avg, 1),
-            "total_attempts": len(times),
-            "employees": data["employees"],
-            "times": data["times"],
-            "expected_time": EXPECTED_MODULE_TIME,
-        })
-    return result
-
-
-def delete_employee(name):
-    """Delete all records for an employee using batch write."""
-    items = get_employee_progress(name)
-    if not items:
-        return
-    # Use batch write for efficient bulk delete
+def delete_employee(user_id: str) -> None:
+    """Remove all module rows for an employee."""
+    rows = get_employee_progress(user_id)
     with table.batch_writer() as batch:
-        for item in items:
-            batch.delete_item(Key={"name": name, "module": item["module"]})
+        for row in rows:
+            batch.delete_item(Key={"userId": user_id, "moduleId": row["moduleId"]})
 
 
-def batch_add_employees(records):
+def batch_add_employees(records: list[dict]) -> int:
     """
-    Batch insert multiple employee records at once.
-    Much faster than individual put_item calls for 100+ records.
-
-    Args:
-        records: list of dicts, each with at least 'name' and 'module' keys.
-                 e.g. [{"name": "John", "module": "Intro to AI", "progress": "in_progress"}, ...]
-    Returns:
-        Number of records inserted.
+    Bulk-insert employee records.  Each record must have at least
+    'userId' and 'moduleId'. Other fields default to safe values.
     """
+    now = _now_iso()
     with table.batch_writer() as batch:
-        for record in records:
-            # Ensure required fields have defaults
-            record.setdefault("progress", "in_progress")
-            record.setdefault("time_spent", "0")
-            record.setdefault("alert_count", "0")
-            record.setdefault("alert_status", "normal")
-            record.setdefault("last_updated", datetime.utcnow().isoformat())
-            batch.put_item(Item=record)
+        for rec in records:
+            rec.setdefault("moduleName",          MODULE_ID_TO_TITLE.get(str(rec.get("moduleId", "")), ""))
+            rec.setdefault("progress",            "not_started")
+            rec.setdefault("timeSpentSeconds",    Decimal("0"))
+            rec.setdefault("alert_count",         0)
+            rec.setdefault("alert_status",        "normal")
+            rec.setdefault("locked",              False)
+            rec.setdefault("verification_status", "none")
+            rec.setdefault("contact_requested",   False)
+            rec.setdefault("lastActiveAt",        now)
+            rec.setdefault("firstLoginAt",        now)
+            batch.put_item(Item=rec)
     return len(records)
 
 
-def batch_delete_employees(names):
-    """
-    Batch delete all records for multiple employees at once.
-
-    Args:
-        names: list of employee names to remove.
-    Returns:
-        Number of records deleted.
-    """
+def batch_delete_employees(user_ids: list[str]) -> int:
+    """Bulk-delete all rows for a list of userIds."""
     count = 0
     with table.batch_writer() as batch:
-        for name in names:
-            items = get_employee_progress(name)
-            for item in items:
-                batch.delete_item(Key={"name": name, "module": item["module"]})
+        for uid in user_ids:
+            rows = get_employee_progress(uid)
+            for row in rows:
+                batch.delete_item(Key={"userId": uid, "moduleId": row["moduleId"]})
                 count += 1
     return count
 
 
-def get_module_order():
-    """Return the ordered list of modules."""
-    return MODULE_ORDER
+# ── Alert / analytics read helpers ───────────────────────────────────────────
+def get_alerts() -> list[dict]:
+    """Return rows that have at least one warning or a cheating report."""
+    return [r for r in get_all_employees() if r["alert_count"] > 0]
 
 
-def can_access_module(name, module):
+def get_cheating_reports() -> list[dict]:
+    """Return rows flagged as cheating_reported."""
+    return [r for r in get_all_employees() if r["alert_status"] == "cheating_reported"]
+
+
+def get_contact_requests() -> list[dict]:
+    """Return rows where the employee has asked the manager for help."""
+    return [r for r in get_all_employees() if r.get("contact_requested") is True]
+
+
+def get_analytics() -> list[dict]:
     """
-    Check if employee can access a module based on sequential order.
-    Must complete previous module first.
+    Average time-per-module across all employees, plus per-employee breakdown.
+    Returns one entry per module (by title).
     """
-    if module not in MODULE_ORDER:
-        return True  # Unknown module, allow access
-    idx = MODULE_ORDER.index(module)
-    if idx == 0:
-        return True  # First module always accessible
+    all_rows = get_all_employees()
+    buckets: dict[str, dict] = {}
 
-    # Check if previous module is completed
-    prev_module = MODULE_ORDER[idx - 1]
-    items = get_employee_progress(name)
-    for item in items:
-        if item.get("module") == prev_module and item.get("progress") == "completed":
-            return True
-    return False
+    for row in all_rows:
+        title = row["moduleName"]
+        if title not in buckets:
+            buckets[title] = {"times": [], "employees": [], "module_id": row["moduleId"]}
+        buckets[title]["times"].append(row["time_spent"])
+        buckets[title]["employees"].append(row.get("name", "Unknown"))
+
+    result = []
+    for title, data in buckets.items():
+        times = data["times"]
+        avg   = sum(times) / len(times) if times else 0
+        result.append({
+            "module":          title,
+            "module_id":       data["module_id"],
+            "avg_time":        round(avg, 1),
+            "total_attempts":  len(times),
+            "employees":       data["employees"],
+            "times":           times,
+            "expected_time":   EXPECTED_MODULE_TIME,
+        })
+
+    # Return in canonical module order
+    order_map = {title: i for i, title in enumerate(MODULE_ORDER)}
+    result.sort(key=lambda x: order_map.get(x["module"], 99))
+    return result
 
 
-def get_deadline_warnings():
+def get_deadline_warnings() -> list[dict]:
     """
-    Check all employees for deadline warnings.
-    Deadline: MODULE_DEADLINE_DAYS from last_updated (when module was assigned/started).
-    Returns employees approaching or past deadline.
+    Check all in-progress rows for employees approaching or past their
+    MODULE_DEADLINE_DAYS deadline (measured from firstLoginAt).
     """
-    all_items = get_all_employees()
+    all_rows = get_all_employees()
     warnings = []
-    now = datetime.utcnow()
+    now      = datetime.utcnow()
 
-    for item in all_items:
-        if item.get("progress") == "completed":
-            continue  # Already done, no deadline concern
+    for row in all_rows:
+        if row["progress"] == "completed":
+            continue
 
-        last_updated = item.get("last_updated", "")
-        if not last_updated:
+        start_str = row.get("firstLoginAt") or row.get("lastActiveAt")
+        if not start_str:
             continue
 
         try:
-            start_date = datetime.fromisoformat(last_updated)
+            start_date = datetime.fromisoformat(start_str.replace("Z", "+00:00"))
+            # strip tz for naive arithmetic
+            start_date = start_date.replace(tzinfo=None)
         except (ValueError, TypeError):
             continue
 
-        deadline = start_date + timedelta(days=MODULE_DEADLINE_DAYS)
+        deadline  = start_date + timedelta(days=MODULE_DEADLINE_DAYS)
         days_left = (deadline - now).days
 
-        # Determine warning level
+        if days_left > 7:
+            continue
+
         if days_left < 0:
             warning_type = "overdue"
-            message = f"OVERDUE by {abs(days_left)} day(s)!"
+            message      = f"OVERDUE by {abs(days_left)} day(s)!"
         elif days_left <= 1:
             warning_type = "urgent"
-            message = "Due TOMORROW!"
+            message      = "Due TOMORROW!"
         elif days_left <= 3:
             warning_type = "warning"
-            message = f"{days_left} days left"
-        elif days_left <= 7:
-            warning_type = "reminder"
-            message = f"{days_left} days left"
+            message      = f"{days_left} days left"
         else:
-            continue  # No warning needed
+            warning_type = "reminder"
+            message      = f"{days_left} days left"
 
         warnings.append({
-            "name": item.get("name"),
-            "module": item.get("module"),
-            "deadline": deadline.isoformat(),
-            "days_left": days_left,
+            "userId":      row["userId"],
+            "name":        row.get("name", "Unknown"),
+            "module":      row["moduleName"],
+            "module_id":   row["moduleId"],
+            "deadline":    deadline.isoformat(),
+            "days_left":   days_left,
             "warning_type": warning_type,
-            "message": message,
-            "email_reminders": get_email_schedule(days_left),
+            "message":     message,
+            "email_reminders": _email_schedule(days_left),
         })
 
     return warnings
 
 
-def get_email_schedule(days_left):
-    """
-    Determine which reminder emails should be sent.
-    Schedule: 7 days before, 3 days before, 1 day before deadline.
-    """
+def _email_schedule(days_left: int) -> list[str]:
     reminders = []
     if days_left <= 7:
         reminders.append("7-day reminder sent")
@@ -424,3 +536,27 @@ def get_email_schedule(days_left):
     if days_left <= 1:
         reminders.append("1-day URGENT reminder sent")
     return reminders
+
+
+def can_access_module(user_id: str, module_name: str) -> bool:
+    """
+    Sequential gating: must complete the previous module before starting next.
+    Accepts a module title or a numeric string ID.
+    """
+    if str(module_name).isdigit():
+        idx = int(module_name) - 1
+    else:
+        if module_name not in MODULE_ORDER:
+            return True   # unknown module – allow
+        idx = MODULE_ORDER.index(module_name)
+
+    if idx == 0:
+        return True   # first module always open
+
+    prev_id = str(idx)   # e.g. module index 1 → moduleId "1"
+    row     = _get_row(user_id, prev_id)
+    return row.get("progress") == "completed"
+
+
+def get_module_order() -> list[str]:
+    return MODULE_ORDER

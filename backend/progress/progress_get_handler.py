@@ -1,9 +1,30 @@
 """
 Lambda: GET /api/progress/{userId}
-Matches hartnell-trainer/server/routes/progress.js's GET /:userId route
-exactly — same response shape, same empty-state behavior for unknown users.
-"""
 
+Returns the aggregated progress summary for one learner.
+Response shape is identical to what ProgressDashboard.jsx and
+TrainingPage.jsx already expect – no frontend changes needed.
+
+Response body (200)
+───────────────────
+{
+  "userId":           "2",
+  "completedModules": 3,
+  "totalModules":     10,
+  "completionPct":    30,
+  "totalHours":       1.4,
+  "modules": {
+    "1": {
+      "progress":         "completed",
+      "completedAt":      "2026-07-23T10:00:00+00:00",
+      "lastActiveAt":     "2026-07-23T10:00:00+00:00",
+      "timeSpentSeconds": 2700,
+      "steps":            { "1-1": { "status": "completed", ... }, ... }
+    },
+    ...
+  }
+}
+"""
 import json
 import logging
 from decimal import Decimal
@@ -14,14 +35,14 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 CORS_HEADERS = {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin":  "*",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Content-Type": "application/json",
+    "Content-Type":                 "application/json",
 }
 
 
-def _decimal_default(obj):
+def _serial(obj):
     if isinstance(obj, Decimal):
         return int(obj) if obj == obj.to_integral_value() else float(obj)
     raise TypeError
@@ -30,8 +51,8 @@ def _decimal_default(obj):
 def _response(status_code: int, body: dict) -> dict:
     return {
         "statusCode": status_code,
-        "headers": CORS_HEADERS,
-        "body": json.dumps(body, default=_decimal_default),
+        "headers":    CORS_HEADERS,
+        "body":       json.dumps(body, default=_serial),
     }
 
 
@@ -44,7 +65,8 @@ def lambda_handler(event, context):
         return _response(400, {"error": "Missing userId path parameter."})
 
     try:
-        return _response(200, get_user_stats(user_id))
+        stats = get_user_stats(user_id)
+        return _response(200, stats)
     except Exception:
         logger.exception("Failed to fetch progress for userId=%r", user_id)
         return _response(500, {"error": "Internal server error."})
