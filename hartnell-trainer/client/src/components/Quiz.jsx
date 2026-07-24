@@ -132,6 +132,8 @@ export default function Quiz({ questions = [], onComplete }) {
                 if (submitted) {
                   if (opt === q.correct)         cls += ' ' + styles.optCorrect;
                   else if (opt === answer)       cls += ' ' + styles.optWrong;
+                } else if (opt === answer) {
+                  cls += ' ' + styles.optSelected;
                 }
                 return (
                   <button
@@ -143,6 +145,7 @@ export default function Quiz({ questions = [], onComplete }) {
                   >
                     {submitted && opt === q.correct && <span className={styles.icon}>✓ </span>}
                     {submitted && opt === answer && opt !== q.correct && <span className={styles.icon}>✗ </span>}
+                    {!submitted && opt === answer && <span className={styles.icon}>● </span>}
                     {opt}
                   </button>
                 );
