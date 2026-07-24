@@ -24,8 +24,9 @@
   transition:all 0.15s; color:var(--text);
 }
 .option:hover:not(:disabled) { border-color:var(--hc-magenta); background:#fdf4f7; }
-.optCorrect { border-color:var(--success) !important; background:#edfbf1 !important; color:var(--success) !important; font-weight:700; }
-.optWrong   { border-color:var(--error)   !important; background:#fff0ef !important; color:var(--error)   !important; font-weight:700; }
+.optCorrect  { border-color:var(--success) !important; background:#edfbf1 !important; color:var(--success) !important; font-weight:700; }
+.optWrong    { border-color:var(--error)   !important; background:#fff0ef !important; color:var(--error)   !important; font-weight:700; }
+.optSelected { border-color:var(--hc-magenta) !important; background:#fdf4f7 !important; font-weight:600; box-shadow: 0 0 0 2px var(--hc-magenta); }
 .icon { font-style:normal; }
 
 /* Fill blank */
