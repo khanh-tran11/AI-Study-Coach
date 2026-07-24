@@ -1,4 +1,26 @@
 node_modules/
-.env
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+
+# AWS
+.aws/
+*.pem
+credentials
+credentials.json
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
