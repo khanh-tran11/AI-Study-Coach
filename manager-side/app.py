@@ -2,8 +2,8 @@ from flask import Flask, jsonify, request, render_template, redirect, url_for, s
 from functools import wraps
 from db import (
     get_all_employees,
+    get_all_employee_modules,
     get_employee_progress,
-    get_employees_by_module,
     update_progress,
     update_time_spent,
     update_verification_status,
@@ -72,42 +72,42 @@ def dashboard():
 
 # --- API ROUTES ---
 
-# GET /manager/employees - List all employees and their progress
+# GET /manager/employees - List all employees and their progress (flattened)
 @app.route("/manager/employees", methods=["GET"])
 @login_required
 def list_employees():
-    data = get_all_employees()
+    data = get_all_employee_modules()
     return jsonify(data)
 
 
-# GET /manager/employees/<name> - Get one employee's modules
-@app.route("/manager/employees/<name>", methods=["GET"])
+# GET /manager/employees/<user_id> - Get one employee's modules
+@app.route("/manager/employees/<user_id>", methods=["GET"])
 @login_required
-def employee_detail(name):
-    data = get_employee_progress(name)
+def employee_detail(user_id):
+    data = get_employee_progress(user_id)
     return jsonify({"name": name, "modules": data})
 
 
-# PUT /manager/employees/<name>/modules/<module> - Update module status
-@app.route("/manager/employees/<name>/modules/<module>", methods=["PUT"])
+# PUT /manager/employees/<user_id>/modules/<module> - Update module status
+@app.route("/manager/employees/<user_id>/modules/<module>", methods=["PUT"])
 @login_required
-def update_module(name, module):
+def update_module(user_id, module):
     body = request.get_json()
     status = body.get("progress", "completed")
     try:
-        update_progress(name, module, status)
+        update_progress(user_id, module, status)
         return jsonify({"message": f"Updated {name} - {module} to {status}"})
     except ValueError as e:
         return jsonify({"error": str(e)}), 403
 
 
-# PUT /manager/employees/<name>/modules/<module>/time - Record time spent
-@app.route("/manager/employees/<name>/modules/<module>/time", methods=["PUT"])
+# PUT /manager/employees/<user_id>/modules/<module>/time - Record time spent
+@app.route("/manager/employees/<user_id>/modules/<module>/time", methods=["PUT"])
 @login_required
-def record_time(name, module):
+def record_time(user_id, module):
     body = request.get_json()
     time_spent = float(body.get("time_spent", 0))
-    result = update_time_spent(name, module, time_spent)
+    result = update_time_spent(user_id, module, time_spent)
     return jsonify(result)
 
 
@@ -119,13 +119,16 @@ def analytics():
     return jsonify(data)
 
 
-# GET /manager/modules/<module> - Get all employees for a module (uses GSI)
+# GET /manager/modules/<module> - Get all employees for a module
 @app.route("/manager/modules/<module>", methods=["GET"])
 @login_required
 def module_employees(module):
-    progress_filter = request.args.get("progress")  # optional: ?progress=in_progress
-    data = get_employees_by_module(module, progress_filter)
-    return jsonify({"module": module, "employees": data})
+    rows = get_all_employee_modules()
+    progress_filter = request.args.get("progress")
+    filtered = [r for r in rows if r.get("module") == module]
+    if progress_filter:
+        filtered = [r for r in filtered if r.get("progress") == progress_filter]
+    return jsonify({"module": module, "employees": filtered})
 
 
 # GET /manager/alerts - Get suspicious activity alerts
@@ -173,11 +176,11 @@ def module_order():
     return jsonify({"modules": get_module_order()})
 
 
-# GET /manager/can-access/<name>/<module> - Check if employee can access module
-@app.route("/manager/can-access/<name>/<module>", methods=["GET"])
+# GET /manager/can-access/<user_id>/<module> - Check if employee can access module
+@app.route("/manager/can-access/<user_id>/<module>", methods=["GET"])
 @login_required
-def check_access(name, module):
-    allowed = can_access_module(name, module)
+def check_access(user_id, module):
+    allowed = can_access_module(user_id, module)
     return jsonify({"name": name, "module": module, "can_access": allowed})
 
 
@@ -189,12 +192,12 @@ def reports():
     return jsonify(data)
 
 
-# POST /manager/contact/<name>/<module> - Employee contacts manager
-@app.route("/manager/contact/<name>/<module>", methods=["POST"])
-def contact_manager(name, module):
+# POST /manager/contact/<user_id>/<module> - Employee contacts manager
+@app.route("/manager/contact/<user_id>/<module>", methods=["POST"])
+def contact_manager(user_id, module):
     body = request.get_json() or {}
     message = body.get("message", "")
-    submit_contact_request(name, module, message)
+    submit_contact_request(user_id, module, message)
     return jsonify({"message": "Contact request sent to manager. They will review your case shortly."})
 
 
@@ -206,19 +209,19 @@ def view_contact_requests():
     return jsonify(data)
 
 
-# POST /manager/unlock/<name>/<module> - Manager unlocks employee
-@app.route("/manager/unlock/<name>/<module>", methods=["POST"])
+# POST /manager/unlock/<user_id>/<module> - Manager unlocks employee
+@app.route("/manager/unlock/<user_id>/<module>", methods=["POST"])
 @login_required
-def unlock(name, module):
-    unlock_employee(name, module)
+def unlock(user_id, module):
+    unlock_employee(user_id, module)
     return jsonify({"message": f"Unlocked {name} for {module}. They can redo the assignment now."})
 
 
-# DELETE /manager/employees/<name> - Remove an employee
-@app.route("/manager/employees/<name>", methods=["DELETE"])
+# DELETE /manager/employees/<user_id> - Remove an employee
+@app.route("/manager/employees/<user_id>", methods=["DELETE"])
 @login_required
-def remove_employee(name):
-    delete_employee(name)
+def remove_employee(user_id):
+    delete_employee(user_id)
     return jsonify({"message": f"{name} removed"})
 
 
@@ -246,14 +249,14 @@ def batch_delete():
     return jsonify({"message": f"Deleted {count} records", "count": count})
 
 
-# GET /manager/challenge/<name>/<module> - Get a verification challenge question
-@app.route("/manager/challenge/<name>/<module>", methods=["GET"])
+# GET /manager/challenge/<user_id>/<module> - Get a verification challenge question
+@app.route("/manager/challenge/<user_id>/<module>", methods=["GET"])
 @login_required
-def get_challenge(name, module):
+def get_challenge(user_id, module):
     question_data = get_challenge_question(module)
     # Get current alert count for this employee/module to determine gif
     from db import get_employee_progress
-    items = get_employee_progress(name)
+    items = get_employee_progress(user_id)
     alert_count = 0
     for item in items:
         if item.get("module") == module:
@@ -272,10 +275,10 @@ def get_challenge(name, module):
     })
 
 
-# POST /manager/verify/<name>/<module> - Verify the employee's answer
-@app.route("/manager/verify/<name>/<module>", methods=["POST"])
+# POST /manager/verify/<user_id>/<module> - Verify the employee's answer
+@app.route("/manager/verify/<user_id>/<module>", methods=["POST"])
 @login_required
-def verify_answer(name, module):
+def verify_answer(user_id, module):
     body = request.get_json()
     given_answer = body.get("answer", "")
     correct_answer = body.get("correct_option", "")
@@ -283,14 +286,14 @@ def verify_answer(name, module):
     is_correct = given_answer.upper() == correct_answer.upper()
 
     if is_correct:
-        update_verification_status(name, module, "passed", given_answer)
+        update_verification_status(user_id, module, "passed", given_answer)
         return jsonify({
             "result": "passed",
             "message": "Correct! Verification passed.",
             "is_correct": True,
         })
     else:
-        result = update_verification_status(name, module, "failed", given_answer)
+        result = update_verification_status(user_id, module, "failed", given_answer)
         # Get updated alert count
         alert_count = result.get("alert_count", 0)
         is_locked = result.get("locked", False)

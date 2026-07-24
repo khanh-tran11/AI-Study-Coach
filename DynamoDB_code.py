@@ -3,7 +3,7 @@ from datetime import datetime
 from botocore.exceptions import ClientError
 
 # Initialize DynamoDB resource
-dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
+dynamodb = boto3.resource("dynamodb", region_name="us-west-2")
 table = dynamodb.Table("AITrainerProgress")
 
 
@@ -25,7 +25,7 @@ def update_module_progress(user_name: str, module_name: str, completed: bool = T
     try:
         response = table.update_item(
             Key={
-                "name": user_name,
+                "userId": user_name,
                 "module": module_name,
             },
             UpdateExpression=(
@@ -59,7 +59,7 @@ def get_user_progress(user_name: str) -> list:
     """
     try:
         response = table.query(
-            KeyConditionExpression=boto3.dynamodb.conditions.Key("name").eq(user_name)
+            KeyConditionExpression=boto3.dynamodb.conditions.Key("userId").eq(user_name)
         )
         items = response.get("Items", [])
         return items

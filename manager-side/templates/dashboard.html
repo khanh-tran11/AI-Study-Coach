@@ -227,7 +227,7 @@
 
         <!-- Search and Filter Controls -->
         <div style="display:flex; gap:12px; margin-bottom:15px; flex-wrap:wrap; align-items:center;">
-            <input type="text" id="searchInput" placeholder="Search by name..." oninput="applyFilters()"
+            <input type="text" id="searchInput" placeholder="Search by email..." oninput="applyFilters()"
                 style="padding:10px 14px; border:1px solid #ddd; border-radius:8px; font-size:14px; width:220px;">
             <select id="statusFilter" onchange="applyFilters()"
                 style="padding:10px 14px; border:1px solid #ddd; border-radius:8px; font-size:14px;">
@@ -404,7 +404,7 @@
             const alertFilter = document.getElementById("alertFilter").value;
 
             filteredData = allData.filter(item => {
-                const matchSearch = item.name.toLowerCase().includes(search);
+                const matchSearch = item.userId.toLowerCase().includes(search);
                 const matchStatus = statusFilter === "all" || item.progress === statusFilter;
                 const matchAlert = alertFilter === "all" || (item.alert_status || "normal") === alertFilter;
                 return matchSearch && matchStatus && matchAlert;
@@ -465,17 +465,17 @@
                 const lastEngaged = item.last_updated ? formatTimeAgo(item.last_updated) : "-";
                 const row = document.createElement("tr");
                 row.innerHTML = `
-                    <td>${item.name}</td>
+                    <td>${item.userId}</td>
                     <td>${item.module}</td>
                     <td><span class="status-${item.progress}">${item.progress}</span></td>
                     <td>${timeSpent}</td>
                     <td title="${item.last_updated || ''}">${lastEngaged}</td>
                     <td class="actions">
                         ${item.progress !== "completed"
-                            ? `<button class="btn btn-complete" onclick="updateStatus('${item.name}','${item.module}','completed')">Mark Complete</button>`
-                            : `<button class="btn btn-reset" onclick="updateStatus('${item.name}','${item.module}','in_progress')">Reset</button>`
+                            ? `<button class="btn btn-complete" onclick="updateStatus('${item.userId}','${item.module}','completed')">Mark Complete</button>`
+                            : `<button class="btn btn-reset" onclick="updateStatus('${item.userId}','${item.module}','in_progress')">Reset</button>`
                         }
-                        <button class="btn btn-delete" onclick="deleteEmployee('${item.name}')">Delete</button>
+                        <button class="btn btn-delete" onclick="deleteEmployee('${item.userId}')">Delete</button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -522,7 +522,7 @@
         }
 
         function updateStats(data) {
-            const names = [...new Set(data.map(d => d.name))];
+            const names = [...new Set(data.map(d => d.userId))];
             const completed = data.filter(d => d.progress === "completed").length;
             const inProgress = data.filter(d => d.progress === "in_progress").length;
             const warnings = data.filter(d => parseInt(d.alert_count || 0) > 0).length;
@@ -705,7 +705,7 @@
                 card.innerHTML = `
                     <img src="${gifData.url}" alt="funny gif">
                     <div class="alert-info">
-                        <h4>${item.name} - ${item.module}</h4>
+                        <h4>${item.userId} - ${item.module}</h4>
                         <p>${message}</p>
                         <p style="font-size:12px; color:#888; font-style:italic;">"${gifData.caption}"</p>
                         <div class="alert-count">
@@ -713,7 +713,7 @@
                             Status: <span class="status-${item.alert_status}">${item.alert_status}</span>
                         </div>
                     </div>
-                    <button class="btn btn-complete" style="padding:10px 16px;" onclick="sendChallenge('${item.name}','${item.module}')">
+                    <button class="btn btn-complete" style="padding:10px 16px;" onclick="sendChallenge('${item.userId}','${item.module}')">
                         Send Challenge
                     </button>
                 `;
@@ -876,18 +876,18 @@
                     card.className = "report-card";
                     card.style.borderLeftColor = "#28a745";
                     card.innerHTML = `
-                        <h4 style="color:#28a745;">MESSAGE FROM: ${item.name}</h4>
+                        <h4 style="color:#28a745;">MESSAGE FROM: ${item.userId}</h4>
                         <p><strong>Module:</strong> ${item.module}</p>
                         <p><strong>Their message:</strong> "${item.contact_message || 'No message provided'}"</p>
                         <p><strong>Sent at:</strong> ${item.contact_time || 'N/A'}</p>
                         <p><strong>Warnings:</strong> ${item.alert_count || 0}</p>
                         <div style="margin-top:12px; display:flex; gap:10px;">
-                            <button class="btn btn-complete" style="padding:10px 20px;" onclick="unlockEmployee('${item.name}','${item.module}')">🔓 Unlock & Allow Redo</button>
-                            <button class="btn" style="padding:10px 20px; background:#667eea; color:white;" onclick="openReplyBox('${item.name}','${item.module}')">💬 Reply</button>
+                            <button class="btn btn-complete" style="padding:10px 20px;" onclick="unlockEmployee('${item.userId}','${item.module}')">🔓 Unlock & Allow Redo</button>
+                            <button class="btn" style="padding:10px 20px; background:#667eea; color:white;" onclick="openReplyBox('${item.userId}','${item.module}')">💬 Reply</button>
                         </div>
-                        <div id="reply-${item.name}-${item.module.replace(/ /g,'_')}" style="display:none; margin-top:10px;">
-                            <textarea placeholder="Type reply to ${item.name}..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; min-height:60px; font-size:13px;"></textarea>
-                            <button class="btn btn-complete" style="margin-top:6px; padding:8px 16px;" onclick="sendReply('${item.name}','${item.module}', this)">Send Reply</button>
+                        <div id="reply-${item.userId}-${item.module.replace(/ /g,'_')}" style="display:none; margin-top:10px;">
+                            <textarea placeholder="Type reply to ${item.userId}..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; min-height:60px; font-size:13px;"></textarea>
+                            <button class="btn btn-complete" style="margin-top:6px; padding:8px 16px;" onclick="sendReply('${item.userId}','${item.module}', this)">Send Reply</button>
                         </div>
                     `;
                     container.appendChild(card);
@@ -906,15 +906,15 @@
                     const card = document.createElement("div");
                     card.className = "report-card";
                     card.innerHTML = `
-                        <h4>REPORT: ${item.name}</h4>
+                        <h4>REPORT: ${item.userId}</h4>
                         <p><strong>Module:</strong> ${item.module}</p>
                         <p><strong>Time spent:</strong> ${item.time_spent || '?'} min (Expected: 30 min)</p>
                         <p><strong>Warnings:</strong> ${item.alert_count || 0}</p>
                         <p><strong>Employee contacted:</strong> ${hasContact ? '✅ Yes' : '⏳ Waiting...'}</p>
                         <p style="margin-top:8px; font-size:12px; color:#999;">Last updated: ${item.last_updated || 'N/A'}</p>
                         <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-                            <button class="btn btn-complete" style="padding:10px 20px;" onclick="unlockEmployee('${item.name}','${item.module}')">🔓 Unlock & Allow Redo</button>
-                            <button class="btn" style="padding:10px 20px; background:#667eea; color:white;" onclick="draftEmail('${item.name}','${item.module}','cheating')">📧 Draft Email</button>
+                            <button class="btn btn-complete" style="padding:10px 20px;" onclick="unlockEmployee('${item.userId}','${item.module}')">🔓 Unlock & Allow Redo</button>
+                            <button class="btn" style="padding:10px 20px; background:#667eea; color:white;" onclick="draftEmail('${item.userId}','${item.module}','cheating')">📧 Draft Email</button>
                         </div>
                     `;
                     container.appendChild(card);
@@ -998,7 +998,7 @@
                 const card = document.createElement("div");
                 card.style.cssText = `padding:12px; border-left:3px solid ${color}; background:#f8f9fa; border-radius:6px; margin-bottom:8px;`;
                 card.innerHTML = `
-                    <div style="font-weight:bold; font-size:13px;">${icon} ${item.name}</div>
+                    <div style="font-weight:bold; font-size:13px;">${icon} ${item.userId}</div>
                     <div style="font-size:12px; color:#666;">${item.module}</div>
                     <div style="font-size:12px; color:${color}; font-weight:bold; margin-top:4px;">${item.message}</div>
                     <div style="font-size:11px; color:#999; margin-top:4px;">${item.email_reminders.join(' → ')}</div>
