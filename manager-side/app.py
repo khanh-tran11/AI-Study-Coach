@@ -19,6 +19,9 @@ Environment variables (create manager-side/.env or set in shell):
 import os
 from functools import wraps
 
+from dotenv import load_dotenv
+load_dotenv()  # must run before `from db import ...` - db.py reads env vars at import time
+
 from flask import (
     Flask, jsonify, redirect, render_template,
     request, session, url_for,

@@ -25,7 +25,7 @@ import logging
 import os
 
 import boto3
-from progress_common import TABLE_NAME, AWS_REGION, MODULE_ID_TO_TITLE, _now_iso
+from progress_common import TABLE_NAME, AWS_REGION, MODULE_TITLES, _now_iso
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -57,7 +57,7 @@ def record_login(user_id: str, name: str, email: str) -> None:
     - All other fields are initialised to safe defaults if missing.
     """
     now = _now_iso()
-    for module_id, module_name in MODULE_ID_TO_TITLE.items():
+    for module_id, module_name in MODULE_TITLES.items():
         table.update_item(
             Key={"userId": user_id, "moduleId": module_id},
             UpdateExpression=(
